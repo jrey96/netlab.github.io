@@ -1,0 +1,767 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ARP Interactive Lab</title>
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0e1a;
+    --panel: #0f1525;
+    --border: #1e2d4a;
+    --accent: #00e5ff;
+    --accent2: #ff6b35;
+    --green: #00ff88;
+    --yellow: #ffd700;
+    --text: #c8d8f0;
+    --dim: #4a6080;
+    --request-color: #ff6b35;
+    --reply-color: #00ff88;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 16px;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  header {
+    border-bottom: 1px solid var(--border);
+    padding: 16px 32px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    background: var(--panel);
+  }
+
+  header .logo {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 20px;
+    color: var(--accent);
+    letter-spacing: 2px;
+  }
+
+  header .subtitle {
+    color: var(--dim);
+    font-size: 14px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+
+  .badge {
+    margin-left: auto;
+    background: rgba(0,229,255,0.1);
+    border: 1px solid var(--accent);
+    color: var(--accent);
+    padding: 4px 12px;
+    font-size: 12px;
+    font-family: 'Share Tech Mono', monospace;
+    letter-spacing: 1px;
+  }
+
+  .main {
+    display: grid;
+    grid-template-columns: 1fr 340px;
+    grid-template-rows: auto 1fr;
+    gap: 0;
+    height: calc(100vh - 57px);
+  }
+
+  /* ── TOPOLOGY CANVAS ── */
+  .topology {
+    grid-row: 1 / 3;
+    position: relative;
+    padding: 32px;
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+  }
+
+  .section-label {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 11px;
+    color: var(--dim);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+
+  /* Network diagram */
+  .diagram-area {
+    flex: 1;
+    position: relative;
+    min-height: 320px;
+  }
+
+  svg#network {
+    width: 100%;
+    height: 100%;
+    min-height: 320px;
+  }
+
+  /* ARP Table */
+  .arp-table-section {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    padding: 16px;
+  }
+
+  .arp-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 13px;
+  }
+
+  .arp-table th {
+    text-align: left;
+    color: var(--dim);
+    padding: 4px 12px;
+    font-size: 11px;
+    letter-spacing: 1px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .arp-table td {
+    padding: 6px 12px;
+    border-bottom: 1px solid rgba(30,45,74,0.5);
+    color: var(--text);
+  }
+
+  .arp-table tr.new-entry td {
+    animation: highlightRow 1.5s ease;
+  }
+
+  @keyframes highlightRow {
+    0% { background: rgba(0,255,136,0.2); color: var(--green); }
+    100% { background: transparent; }
+  }
+
+  .mac { color: var(--accent); }
+  .ip-addr { color: var(--yellow); }
+  .iface { color: var(--dim); }
+
+  /* ── RIGHT PANEL ── */
+  .controls {
+    padding: 24px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .log-panel {
+    padding: 16px 24px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  /* Scenario picker */
+  .scenario-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+
+  .scenario-btn {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 10px 8px;
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    text-align: left;
+    transition: all 0.15s;
+    letter-spacing: 0.5px;
+  }
+
+  .scenario-btn:hover, .scenario-btn.active {
+    border-color: var(--accent);
+    color: var(--accent);
+    background: rgba(0,229,255,0.05);
+  }
+
+  .scenario-btn .snum {
+    display: block;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 10px;
+    color: var(--dim);
+    margin-bottom: 4px;
+  }
+
+  /* Run button */
+  .run-btn {
+    background: transparent;
+    border: 2px solid var(--accent);
+    color: var(--accent);
+    padding: 12px;
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 16px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    cursor: pointer;
+    transition: all 0.15s;
+    text-transform: uppercase;
+    width: 100%;
+  }
+
+  .run-btn:hover:not(:disabled) {
+    background: var(--accent);
+    color: var(--bg);
+  }
+
+  .run-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+
+  .reset-btn {
+    background: transparent;
+    border: 1px solid var(--dim);
+    color: var(--dim);
+    padding: 8px;
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 1px;
+    cursor: pointer;
+    transition: all 0.15s;
+    text-transform: uppercase;
+    width: 100%;
+  }
+
+  .reset-btn:hover {
+    border-color: var(--accent2);
+    color: var(--accent2);
+  }
+
+  /* Log entries */
+  .log-entry {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 12px;
+    padding: 6px 10px;
+    border-left: 3px solid transparent;
+    animation: fadeIn 0.3s ease;
+    line-height: 1.5;
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateX(8px); }
+    to { opacity: 1; transform: translateX(0); }
+  }
+
+  .log-entry.request {
+    border-color: var(--request-color);
+    color: var(--request-color);
+    background: rgba(255,107,53,0.05);
+  }
+
+  .log-entry.reply {
+    border-color: var(--reply-color);
+    color: var(--reply-color);
+    background: rgba(0,255,136,0.05);
+  }
+
+  .log-entry.info {
+    border-color: var(--dim);
+    color: var(--dim);
+  }
+
+  .log-entry.learned {
+    border-color: var(--yellow);
+    color: var(--yellow);
+    background: rgba(255,215,0,0.05);
+  }
+
+  .log-entry.cached {
+    border-color: var(--accent);
+    color: var(--accent);
+    background: rgba(0,229,255,0.05);
+  }
+
+  .log-entry .timestamp {
+    opacity: 0.5;
+    margin-right: 8px;
+  }
+
+  /* Quiz section */
+  .quiz-section {
+    background: rgba(0,229,255,0.04);
+    border: 1px solid rgba(0,229,255,0.2);
+    padding: 14px;
+    margin-top: 8px;
+  }
+
+  .quiz-q {
+    font-size: 13px;
+    font-weight: 600;
+    margin-bottom: 10px;
+    color: var(--text);
+  }
+
+  .quiz-options { display: flex; flex-direction: column; gap: 6px; }
+
+  .quiz-opt {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 8px 12px;
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 13px;
+    cursor: pointer;
+    text-align: left;
+    transition: all 0.15s;
+  }
+
+  .quiz-opt:hover { border-color: var(--accent); color: var(--accent); }
+  .quiz-opt.correct { border-color: var(--green); background: rgba(0,255,136,0.1); color: var(--green); }
+  .quiz-opt.wrong { border-color: var(--accent2); background: rgba(255,107,53,0.1); color: var(--accent2); }
+
+  .quiz-feedback {
+    margin-top: 10px;
+    font-size: 13px;
+    font-weight: 600;
+    display: none;
+  }
+
+  /* SVG styles */
+  .device-label {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    fill: #c8d8f0;
+  }
+
+  .device-sublabel {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 10px;
+    fill: #4a6080;
+  }
+
+  .packet {
+    transition: all 0.1s;
+  }
+
+  .highlight-device {
+    animation: pulseDevice 0.8s ease infinite alternate;
+  }
+
+  @keyframes pulseDevice {
+    from { filter: drop-shadow(0 0 4px rgba(0,229,255,0.3)); }
+    to { filter: drop-shadow(0 0 12px rgba(0,229,255,0.9)); }
+  }
+
+  .progress-bar {
+    height: 3px;
+    background: var(--border);
+    margin-top: 8px;
+  }
+
+  .progress-fill {
+    height: 100%;
+    background: var(--accent);
+    width: 0%;
+    transition: width 0.3s;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <div class="logo">ARP // LAB</div>
+    <div class="subtitle">Address Resolution Protocol — Interactive Simulator</div>
+  </div>
+  <div class="badge">PACKET TRACER COMPANION</div>
+</header>
+
+<div class="main">
+
+  <!-- LEFT: Topology + ARP table -->
+  <div class="topology">
+    <div>
+      <div class="section-label">// Network Topology</div>
+      <div class="diagram-area">
+        <svg id="network" viewBox="0 0 700 280">
+          <!-- Switch -->
+          <rect x="290" y="120" width="120" height="40" rx="4" fill="#0f1525" stroke="#1e2d4a" stroke-width="1.5"/>
+          <text x="350" y="136" text-anchor="middle" class="device-label">SW1</text>
+          <text x="350" y="152" text-anchor="middle" class="device-sublabel">Cisco 2960</text>
+
+          <!-- PC-A -->
+          <rect x="40" y="50" width="110" height="50" rx="4" fill="#0f1525" stroke="#1e2d4a" stroke-width="1.5" id="dev-pca"/>
+          <text x="95" y="68" text-anchor="middle" class="device-label">PC-A</text>
+          <text x="95" y="82" text-anchor="middle" class="device-sublabel">192.168.1.10</text>
+          <text x="95" y="94" text-anchor="middle" class="device-sublabel">AA:AA:AA:AA:AA:01</text>
+
+          <!-- PC-B -->
+          <rect x="290" y="10" width="120" height="50" rx="4" fill="#0f1525" stroke="#1e2d4a" stroke-width="1.5" id="dev-pcb"/>
+          <text x="350" y="28" text-anchor="middle" class="device-label">PC-B</text>
+          <text x="350" y="42" text-anchor="middle" class="device-sublabel">192.168.1.20</text>
+          <text x="350" y="54" text-anchor="middle" class="device-sublabel">BB:BB:BB:BB:BB:02</text>
+
+          <!-- PC-C -->
+          <rect x="550" y="50" width="110" height="50" rx="4" fill="#0f1525" stroke="#1e2d4a" stroke-width="1.5" id="dev-pcc"/>
+          <text x="605" y="68" text-anchor="middle" class="device-label">PC-C</text>
+          <text x="605" y="82" text-anchor="middle" class="device-sublabel">192.168.1.30</text>
+          <text x="605" y="94" text-anchor="middle" class="device-sublabel">CC:CC:CC:CC:CC:03</text>
+
+          <!-- PC-D -->
+          <rect x="550" y="190" width="110" height="50" rx="4" fill="#0f1525" stroke="#1e2d4a" stroke-width="1.5" id="dev-pcd"/>
+          <text x="605" y="208" text-anchor="middle" class="device-label">PC-D</text>
+          <text x="605" y="222" text-anchor="middle" class="device-sublabel">192.168.1.40</text>
+          <text x="605" y="236" text-anchor="middle" class="device-sublabel">DD:DD:DD:DD:DD:04</text>
+
+          <!-- PC-E (different subnet) -->
+          <rect x="40" y="190" width="110" height="50" rx="4" fill="#0f1525" stroke="#331a00" stroke-width="1.5" id="dev-pce"/>
+          <text x="95" y="208" text-anchor="middle" class="device-label" fill="#ff6b35">PC-E</text>
+          <text x="95" y="222" text-anchor="middle" class="device-sublabel">192.168.2.50</text>
+          <text x="95" y="236" text-anchor="middle" class="device-sublabel">EE:EE:EE:EE:EE:05</text>
+
+          <!-- Cables -->
+          <line x1="150" y1="75" x2="290" y2="135" stroke="#1e2d4a" stroke-width="1.5" id="cable-a"/>
+          <line x1="350" y1="60" x2="350" y2="120" stroke="#1e2d4a" stroke-width="1.5" id="cable-b"/>
+          <line x1="550" y1="75" x2="410" y2="135" stroke="#1e2d4a" stroke-width="1.5" id="cable-c"/>
+          <line x1="550" y1="215" x2="410" y2="145" stroke="#1e2d4a" stroke-width="1.5" id="cable-d"/>
+          <line x1="150" y1="215" x2="290" y2="145" stroke="#331a00" stroke-width="1.5" id="cable-e" stroke-dasharray="6,3"/>
+
+          <!-- Packet element (hidden by default) -->
+          <circle id="packet" r="10" fill="none" stroke="none" opacity="0"/>
+          <text id="packet-label" x="0" y="0" text-anchor="middle" font-family="Share Tech Mono, monospace" font-size="9" fill="white" opacity="0">ARP</text>
+        </svg>
+      </div>
+    </div>
+
+    <div class="arp-table-section">
+      <div class="section-label">// ARP Cache — PC-A (192.168.1.10)</div>
+      <table class="arp-table">
+        <thead>
+          <tr>
+            <th>IP Address</th>
+            <th>MAC Address</th>
+            <th>Interface</th>
+            <th>TTL</th>
+          </tr>
+        </thead>
+        <tbody id="arp-tbody">
+          <tr><td colspan="4" style="color:var(--dim);font-family:'Share Tech Mono',monospace;font-size:12px;padding:8px 12px;">Cache is empty — run a scenario</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- RIGHT: Controls -->
+  <div style="display:flex;flex-direction:column;overflow:hidden;">
+    <div class="controls">
+      <div class="section-label">// Select Scenario</div>
+      <div class="scenario-grid">
+        <button class="scenario-btn active" onclick="selectScenario(0, this)">
+          <span class="snum">SCENARIO 01</span>First Ping (Cold Cache)
+        </button>
+        <button class="scenario-btn" onclick="selectScenario(1, this)">
+          <span class="snum">SCENARIO 02</span>Cached Reply
+        </button>
+        <button class="scenario-btn" onclick="selectScenario(2, this)">
+          <span class="snum">SCENARIO 03</span>Wrong Subnet
+        </button>
+        <button class="scenario-btn" onclick="selectScenario(3, this)">
+          <span class="snum">SCENARIO 04</span>Gratuitous ARP
+        </button>
+      </div>
+      <div class="progress-bar"><div class="progress-fill" id="progress"></div></div>
+      <button class="run-btn" id="run-btn" onclick="runScenario()">▶ Run Simulation</button>
+      <button class="reset-btn" onclick="resetAll()">↺ Reset Lab</button>
+    </div>
+
+    <div class="log-panel" id="log-panel">
+      <div class="log-entry info"><span class="timestamp">[00:00]</span>Lab ready. Select a scenario and press Run.</div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  let currentScenario = 0;
+  let running = false;
+  let arpCache = {};
+  let logTime = 0;
+
+  const scenarios = [
+    {
+      title: "Scenario 1 — First Ping (Cold Cache)",
+      description: "PC-A wants to ping PC-B (192.168.1.20) but has no ARP cache entry. Watch the full ARP request/reply cycle.",
+      steps: [
+        { type: "info",    msg: "PC-A initiates ping to 192.168.1.20", src: "pca" },
+        { type: "info",    msg: "PC-A checks ARP cache... no entry for 192.168.1.20", src: "pca" },
+        { type: "request", msg: "ARP REQUEST (broadcast) — Who has 192.168.1.20? Tell 192.168.1.10", src: "pca", dst: "broadcast", packet: {from: [95,75], to: [350,120], color: "#ff6b35", label: "REQ"} },
+        { type: "info",    msg: "Switch floods ARP request to all ports (broadcast ff:ff:ff:ff:ff:ff)", src: "switch" },
+        { type: "info",    msg: "PC-C receives request — not my IP, ignored", src: "pcc" },
+        { type: "info",    msg: "PC-D receives request — not my IP, ignored", src: "pcd" },
+        { type: "reply",   msg: "PC-B: That's me! Sending ARP REPLY (unicast) to AA:AA:AA:AA:AA:01", src: "pcb", dst: "pca", packet: {from: [350,60], to: [95,75], color: "#00ff88", label: "REP"} },
+        { type: "learned", msg: "PC-A learns: 192.168.1.20 → BB:BB:BB:BB:BB:02 (added to ARP cache)", learn: {ip: "192.168.1.20", mac: "BB:BB:BB:BB:BB:02"} },
+        { type: "info",    msg: "PC-A now sends ICMP Echo (ping) directly to BB:BB:BB:BB:BB:02", src: "pca" },
+      ],
+      quiz: {
+        q: "Why does PC-A send an ARP REQUEST before the ping?",
+        opts: [
+          "To check if the target is online",
+          "IP packets need a destination MAC — ARP resolves IP→MAC",
+          "The switch requires it before forwarding",
+          "To update the routing table"
+        ],
+        correct: 1,
+        explain: "Ethernet frames require a destination MAC address. ARP maps an IP address to a MAC so the frame can be delivered on the local network."
+      }
+    },
+    {
+      title: "Scenario 2 — Cached ARP Reply",
+      description: "PC-A pings PC-B again. Since the ARP cache already has an entry, no ARP request is needed.",
+      steps: [
+        { type: "info",    msg: "PC-A initiates ping to 192.168.1.20 again", src: "pca" },
+        { type: "cached",  msg: "PC-A checks ARP cache... HIT! 192.168.1.20 = BB:BB:BB:BB:BB:02", src: "pca" },
+        { type: "info",    msg: "No ARP request needed — cache is valid", src: "pca" },
+        { type: "info",    msg: "PC-A sends ICMP Echo directly to BB:BB:BB:BB:BB:02 (no ARP overhead)", src: "pca", packet: {from: [95,75], to: [350,60], color: "#00e5ff", label: "PING"} },
+        { type: "info",    msg: "This is why ARP caching improves network performance", src: null },
+      ],
+      quiz: {
+        q: "What is the default ARP cache timeout on most systems?",
+        opts: [
+          "10 seconds",
+          "5 minutes (~240-300s on Cisco, ~60s Windows default)",
+          "1 hour",
+          "It never expires"
+        ],
+        correct: 1,
+        explain: "ARP cache entries typically expire after a few minutes (Cisco IOS default is ~240s, Windows ~60s). This allows the cache to refresh if a device changes its MAC (e.g. NIC replacement)."
+      }
+    },
+    {
+      title: "Scenario 3 — Wrong Subnet (No ARP)",
+      description: "PC-A tries to reach 192.168.2.50 (PC-E, different subnet). ARP won't find it — a router is needed.",
+      steps: [
+        { type: "info",    msg: "PC-A wants to reach 192.168.2.50 (PC-E)", src: "pca" },
+        { type: "info",    msg: "PC-A checks subnet: 192.168.2.50 is NOT on 192.168.1.0/24", src: "pca" },
+        { type: "info",    msg: "PC-A will NOT ARP for 192.168.2.50 directly", src: "pca" },
+        { type: "request", msg: "ARP REQUEST for default gateway (e.g. 192.168.1.1) — router needed to forward traffic", src: "pca", packet: {from: [95,75], to: [350,120], color: "#ff6b35", label: "GW?"} },
+        { type: "info",    msg: "Without a router/gateway configured, the ping fails — 'Destination host unreachable'", src: null },
+        { type: "info",    msg: "Key rule: ARP only works within the same subnet (broadcast domain)", src: null },
+      ],
+      quiz: {
+        q: "PC-A (192.168.1.10/24) wants to reach 192.168.2.50. What does it ARP for?",
+        opts: [
+          "It ARPs for 192.168.2.50 directly",
+          "It ARPs for its default gateway's IP",
+          "It sends a broadcast to find a router",
+          "It doesn't use ARP at all"
+        ],
+        correct: 1,
+        explain: "When the destination is outside the local subnet, the host ARPs for its default gateway. The gateway (router) then forwards the packet to the remote subnet."
+      }
+    },
+    {
+      title: "Scenario 4 — Gratuitous ARP",
+      description: "PC-B announces its own MAC address to update all devices' caches — used during startup or IP change.",
+      steps: [
+        { type: "info",    msg: "PC-B has just come online (or its IP was reconfigured)", src: "pcb" },
+        { type: "request", msg: "GRATUITOUS ARP — PC-B broadcasts: 192.168.1.20 is at BB:BB:BB:BB:BB:02", src: "pcb", packet: {from: [350,60], to: [350,120], color: "#ffd700", label: "GARP"} },
+        { type: "info",    msg: "Switch floods to all ports as a broadcast", src: "switch" },
+        { type: "learned", msg: "PC-A updates cache: 192.168.1.20 → BB:BB:BB:BB:BB:02", learn: {ip: "192.168.1.20", mac: "BB:BB:BB:BB:BB:02"} },
+        { type: "info",    msg: "PC-C updates cache if it had a stale entry", src: "pcc" },
+        { type: "info",    msg: "Gratuitous ARP is also used by ARP spoofing attacks — be aware!", src: null },
+      ],
+      quiz: {
+        q: "Which of these is a legitimate use of Gratuitous ARP?",
+        opts: [
+          "Scanning for open ports",
+          "Detecting duplicate IP addresses on the network",
+          "Bypassing firewall rules",
+          "Encrypting ARP traffic"
+        ],
+        correct: 1,
+        explain: "Gratuitous ARP is used to: (1) announce a new MAC, (2) detect duplicate IPs — if another device replies to your own IP, there's a conflict, and (3) update stale ARP caches after a failover event."
+      }
+    }
+  ];
+
+  function selectScenario(idx, btn) {
+    if (running) return;
+    currentScenario = idx;
+    document.querySelectorAll('.scenario-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+  }
+
+  function log(type, msg) {
+    const panel = document.getElementById('log-panel');
+    logTime++;
+    const mm = String(Math.floor(logTime / 60)).padStart(2,'0');
+    const ss = String(logTime % 60).padStart(2,'0');
+    const entry = document.createElement('div');
+    entry.className = `log-entry ${type}`;
+    entry.innerHTML = `<span class="timestamp">[${mm}:${ss}]</span>${msg}`;
+    panel.appendChild(entry);
+    panel.scrollTop = panel.scrollHeight;
+  }
+
+  function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+  function animatePacket(from, to, color, label) {
+    return new Promise(resolve => {
+      const pkt = document.getElementById('packet');
+      const lbl = document.getElementById('packet-label');
+      const svgEl = document.getElementById('network');
+      const bbox = svgEl.getBoundingClientRect();
+      const vw = 700, vh = 280;
+
+      pkt.setAttribute('cx', from[0]);
+      pkt.setAttribute('cy', from[1]);
+      pkt.setAttribute('fill', color);
+      pkt.setAttribute('stroke', color);
+      pkt.setAttribute('opacity', '1');
+      lbl.setAttribute('x', from[0]);
+      lbl.setAttribute('y', from[1] + 4);
+      lbl.setAttribute('opacity', '1');
+      lbl.textContent = label;
+
+      const dur = 900;
+      const start = performance.now();
+      function frame(now) {
+        const t = Math.min((now - start) / dur, 1);
+        const ease = t < 0.5 ? 2*t*t : -1+(4-2*t)*t;
+        const x = from[0] + (to[0] - from[0]) * ease;
+        const y = from[1] + (to[1] - from[1]) * ease;
+        pkt.setAttribute('cx', x);
+        pkt.setAttribute('cy', y);
+        lbl.setAttribute('x', x);
+        lbl.setAttribute('y', y + 4);
+        if (t < 1) requestAnimationFrame(frame);
+        else {
+          pkt.setAttribute('opacity', '0');
+          lbl.setAttribute('opacity', '0');
+          resolve();
+        }
+      }
+      requestAnimationFrame(frame);
+    });
+  }
+
+  async function runScenario() {
+    if (running) return;
+    running = true;
+    document.getElementById('run-btn').disabled = true;
+
+    const sc = scenarios[currentScenario];
+    const panel = document.getElementById('log-panel');
+    panel.innerHTML = '';
+    log('info', `Starting: ${sc.title}`);
+    await sleep(500);
+
+    let progress = 0;
+    const total = sc.steps.length;
+
+    for (let i = 0; i < sc.steps.length; i++) {
+      const step = sc.steps[i];
+      await sleep(900);
+      log(step.type, step.msg);
+
+      if (step.packet) {
+        await animatePacket(step.packet.from, step.packet.to, step.packet.color, step.packet.label);
+      }
+
+      if (step.learn) {
+        addArpEntry(step.learn.ip, step.learn.mac);
+      }
+
+      progress = Math.round(((i+1)/total)*100);
+      document.getElementById('progress').style.width = progress + '%';
+    }
+
+    await sleep(600);
+    showQuiz(sc.quiz);
+    running = false;
+    document.getElementById('run-btn').disabled = false;
+  }
+
+  function addArpEntry(ip, mac) {
+    arpCache[ip] = mac;
+    const tbody = document.getElementById('arp-tbody');
+    // Remove empty row
+    const empty = tbody.querySelector('[colspan]');
+    if (empty) empty.parentElement.remove();
+
+    // Check if row exists
+    const existing = [...tbody.querySelectorAll('tr')].find(r => r.dataset.ip === ip);
+    if (existing) { existing.classList.add('new-entry'); return; }
+
+    const tr = document.createElement('tr');
+    tr.dataset.ip = ip;
+    tr.classList.add('new-entry');
+    tr.innerHTML = `
+      <td class="ip-addr">${ip}</td>
+      <td class="mac">${mac}</td>
+      <td class="iface">Fa0/0</td>
+      <td style="color:var(--dim)">240s</td>
+    `;
+    tbody.appendChild(tr);
+  }
+
+  function showQuiz(quiz) {
+    const panel = document.getElementById('log-panel');
+    const div = document.createElement('div');
+    div.className = 'quiz-section';
+    div.innerHTML = `
+      <div class="section-label">// Knowledge Check</div>
+      <div class="quiz-q">${quiz.q}</div>
+      <div class="quiz-options">
+        ${quiz.opts.map((o,i) => `<button class="quiz-opt" onclick="answerQuiz(this,${i},${quiz.correct},'${quiz.explain.replace(/'/g,"\\'")}',${quiz.opts.length})">${o}</button>`).join('')}
+      </div>
+      <div class="quiz-feedback" id="qfeedback"></div>
+    `;
+    panel.appendChild(div);
+    panel.scrollTop = panel.scrollHeight;
+  }
+
+  function answerQuiz(btn, idx, correct, explain, total) {
+    const opts = btn.parentElement.querySelectorAll('.quiz-opt');
+    opts.forEach(o => o.disabled = true);
+    const feedback = document.getElementById('qfeedback');
+
+    if (idx === correct) {
+      btn.classList.add('correct');
+      feedback.style.color = 'var(--green)';
+      feedback.textContent = '✓ Correct! ' + explain;
+    } else {
+      btn.classList.add('wrong');
+      opts[correct].classList.add('correct');
+      feedback.style.color = 'var(--accent2)';
+      feedback.textContent = '✗ Not quite. ' + explain;
+    }
+    feedback.style.display = 'block';
+
+    const panel = document.getElementById('log-panel');
+    panel.scrollTop = panel.scrollHeight;
+  }
+
+  function resetAll() {
+    if (running) return;
+    arpCache = {};
+    logTime = 0;
+    document.getElementById('log-panel').innerHTML = '<div class="log-entry info"><span class="timestamp">[00:00]</span>Lab reset. Select a scenario and press Run.</div>';
+    document.getElementById('arp-tbody').innerHTML = '<tr><td colspan="4" style="color:var(--dim);font-family:\'Share Tech Mono\',monospace;font-size:12px;padding:8px 12px;">Cache is empty — run a scenario</td></tr>';
+    document.getElementById('progress').style.width = '0%';
+    document.getElementById('packet').setAttribute('opacity','0');
+    document.getElementById('packet-label').setAttribute('opacity','0');
+  }
+</script>
+</body>
+</html>
