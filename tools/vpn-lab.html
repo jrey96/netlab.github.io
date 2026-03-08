@@ -1,0 +1,926 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VPN Lab — NetLab</title>
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Teko:wght@400;600;700&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#05070d;--surface:#090c18;--surface2:#0d1020;--border:#121a2a;--border2:#192233;
+  --vpn:#a78bfa;--vpn-dim:rgba(167,139,250,0.1);
+  --ike:#38bdf8;--ike-dim:rgba(56,189,248,0.1);
+  --enc:#34d399;--enc-dim:rgba(52,211,153,0.1);
+  --red:#f87171;--yellow:#fbbf24;--orange:#fb923c;
+  --text:#8599b5;--white:#dce8f8;--dim:#1e3048;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+html{scroll-behavior:smooth;}
+body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min-height:100vh;overflow-x:hidden;}
+body::before{content:'';position:fixed;inset:0;
+  background:
+    radial-gradient(ellipse 55% 45% at 15% 8%,rgba(167,139,250,0.05) 0%,transparent 55%),
+    radial-gradient(ellipse 45% 35% at 85% 85%,rgba(52,211,153,0.04) 0%,transparent 55%);
+  pointer-events:none;z-index:0;}
+
+nav{position:sticky;top:0;z-index:200;display:flex;align-items:center;padding:0 28px;height:54px;
+  background:rgba(5,7,13,0.94);backdrop-filter:blur(16px);border-bottom:1px solid var(--border);gap:16px;}
+.nav-back{font-family:'Share Tech Mono',monospace;font-size:11px;color:var(--dim);text-decoration:none;letter-spacing:1px;transition:color 0.2s;}
+.nav-back:hover{color:var(--vpn);}
+.nav-sep{color:var(--border2);}
+.nav-title{font-family:'Teko',sans-serif;font-size:22px;letter-spacing:3px;color:var(--white);font-weight:600;}
+.nav-tabs{margin-left:auto;display:flex;gap:3px;}
+.ntab{font-family:'Share Tech Mono',monospace;font-size:11px;padding:5px 16px;color:var(--dim);cursor:pointer;border:1px solid transparent;background:none;letter-spacing:1px;text-transform:uppercase;transition:all 0.15s;}
+.ntab:hover{color:var(--white);}
+.ntab.active{color:var(--white);border-color:var(--border2);}
+.ntab.v.active{color:var(--vpn);border-color:var(--vpn);background:var(--vpn-dim);}
+.ntab.i.active{color:var(--ike);border-color:var(--ike);background:var(--ike-dim);}
+.ntab.e.active{color:var(--enc);border-color:var(--enc);background:var(--enc-dim);}
+
+.page{display:none;}.page.active{display:block;}
+.wrap{position:relative;z-index:1;max-width:1160px;margin:0 auto;padding:44px 32px;}
+.eyebrow{font-family:'Share Tech Mono',monospace;font-size:11px;letter-spacing:3px;text-transform:uppercase;margin-bottom:10px;}
+h1{font-family:'Teko',sans-serif;font-size:clamp(52px,8vw,92px);letter-spacing:3px;line-height:0.9;color:var(--white);font-weight:700;margin-bottom:20px;}
+.hero-sub{font-size:16px;font-weight:300;line-height:1.85;max-width:660px;margin-bottom:40px;}
+.sl{font-family:'Share Tech Mono',monospace;font-size:10px;letter-spacing:2px;color:var(--dim);text-transform:uppercase;margin-bottom:16px;display:flex;align-items:center;gap:10px;}
+.sl::after{content:'';flex:1;height:1px;background:var(--border);}
+.ibox{background:var(--surface);border:1px solid var(--border);padding:28px;margin-bottom:20px;}
+.ibox p{font-size:14px;font-weight:300;line-height:1.9;margin-bottom:14px;}
+.ibox p:last-child{margin-bottom:0;}
+strong.w{color:var(--white);font-weight:500;}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:2px;margin-bottom:20px;}
+.g3{display:grid;grid-template-columns:repeat(3,1fr);gap:2px;margin-bottom:20px;}
+.g4{display:grid;grid-template-columns:repeat(4,1fr);gap:2px;margin-bottom:20px;}
+.gauto{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:2px;margin-bottom:20px;}
+.fc{background:var(--surface);border:1px solid var(--border);padding:22px;}
+.fc-lbl{font-family:'Share Tech Mono',monospace;font-size:10px;letter-spacing:2px;color:var(--dim);text-transform:uppercase;margin-bottom:8px;}
+.fc-title{font-family:'Teko',sans-serif;font-size:22px;letter-spacing:2px;font-weight:600;margin-bottom:8px;}
+.fc-body{font-size:13px;font-weight:300;line-height:1.7;}
+
+/* SIM */
+.sim-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:10px;}
+.sim-title{font-family:'Teko',sans-serif;font-size:24px;letter-spacing:2px;color:var(--white);font-weight:600;}
+.sdesc{font-family:'Share Tech Mono',monospace;font-size:11px;color:var(--dim);letter-spacing:1px;min-height:18px;margin-bottom:8px;}
+.sim-controls{display:flex;gap:8px;align-items:center;}
+.play-btn{font-family:'Share Tech Mono',monospace;font-size:12px;letter-spacing:1.5px;padding:8px 22px;border:2px solid var(--vpn);color:var(--vpn);cursor:pointer;background:transparent;text-transform:uppercase;transition:all 0.15s;}
+.play-btn:hover{background:var(--vpn);color:var(--bg);}
+.play-btn:disabled{opacity:0.3;cursor:not-allowed;}
+.play-btn.ike{border-color:var(--ike);color:var(--ike);}
+.play-btn.ike:hover{background:var(--ike);color:var(--bg);}
+.play-btn.enc{border-color:var(--enc);color:var(--enc);}
+.play-btn.enc:hover{background:var(--enc);color:var(--bg);}
+.spd{font-family:'Share Tech Mono',monospace;font-size:10px;padding:6px 10px;border:1px solid var(--border2);color:var(--dim);background:var(--surface);cursor:pointer;transition:all 0.15s;}
+.spd.active{color:var(--white);border-color:var(--dim);}
+
+.topo-wrap{background:var(--surface);border:1px solid var(--border);margin-bottom:12px;overflow:hidden;}
+.topo-wrap svg{display:block;width:100%;height:auto;}
+
+.log-area{background:var(--surface2);border:1px solid var(--border);padding:12px 16px;height:160px;overflow-y:auto;display:flex;flex-direction:column;gap:3px;font-family:'Share Tech Mono',monospace;font-size:11px;margin-bottom:20px;}
+.ll{letter-spacing:0.5px;opacity:0;animation:sIn 0.3s ease forwards;}
+@keyframes sIn{from{opacity:0;transform:translateX(8px);}to{opacity:1;transform:translateX(0);}}
+.ll.vpn{color:var(--vpn);}.ll.ike{color:var(--ike);}.ll.enc{color:var(--enc);}
+.ll.info{color:var(--dim);}.ll.ok{color:#4ade80;}.ll.warn{color:var(--yellow);}.ll.err{color:var(--red);}
+
+.sc-tabs{display:flex;gap:4px;margin-bottom:16px;flex-wrap:wrap;}
+.sc-tab{font-family:'Share Tech Mono',monospace;font-size:11px;padding:6px 16px;border:1px solid var(--border2);color:var(--dim);background:var(--surface);cursor:pointer;text-transform:uppercase;letter-spacing:1px;transition:all 0.15s;}
+.sc-tab:hover{color:var(--text);}
+.sc-tab.active.v{border-color:var(--vpn);color:var(--vpn);background:var(--vpn-dim);}
+.sc-tab.active.i{border-color:var(--ike);color:var(--ike);background:var(--ike-dim);}
+.sc-tab.active.e{border-color:var(--enc);color:var(--enc);background:var(--enc-dim);}
+
+/* packet layer viz */
+.pkt-stack{display:flex;flex-direction:column;gap:2px;margin:16px 0;}
+.pkt-layer{padding:10px 16px;font-family:'Share Tech Mono',monospace;font-size:12px;letter-spacing:1px;display:flex;align-items:center;gap:12px;border:1px solid;transition:all 0.4s;opacity:0;transform:translateX(-12px);}
+.pkt-layer.show{opacity:1;transform:translateX(0);}
+.pkt-layer.outer{border-color:rgba(167,139,250,0.4);background:rgba(167,139,250,0.07);color:var(--vpn);}
+.pkt-layer.esp{border-color:rgba(52,211,153,0.4);background:rgba(52,211,153,0.07);color:var(--enc);}
+.pkt-layer.inner{border-color:rgba(56,189,248,0.4);background:rgba(56,189,248,0.07);color:var(--ike);}
+.pkt-layer.data{border-color:rgba(251,191,36,0.4);background:rgba(251,191,36,0.06);color:var(--yellow);}
+.pkt-icon{font-size:16px;flex-shrink:0;}
+.pkt-label{font-size:10px;letter-spacing:2px;text-transform:uppercase;flex:1;}
+.pkt-detail{font-size:10px;color:var(--dim);}
+
+/* compare table */
+.ctbl{width:100%;border-collapse:collapse;font-size:13px;margin-bottom:24px;}
+.ctbl th{background:var(--surface2);padding:10px 16px;text-align:left;font-family:'Share Tech Mono',monospace;font-size:10px;letter-spacing:2px;color:var(--dim);text-transform:uppercase;border-bottom:1px solid var(--border2);}
+.ctbl td{padding:10px 16px;border-bottom:1px solid var(--border);vertical-align:top;}
+.ctbl tr:hover td{background:rgba(255,255,255,0.015);}
+.cprop{color:var(--white);font-weight:500;}
+.cv{color:var(--vpn);}.ci{color:var(--ike);}.ce{color:var(--enc);}
+
+/* quiz */
+.qcard{background:var(--surface);border:1px solid var(--border);padding:36px;margin-bottom:20px;}
+.qq{font-family:'Teko',sans-serif;font-size:28px;letter-spacing:2px;color:var(--white);margin-bottom:8px;font-weight:600;line-height:1.2;}
+.qctx{font-family:'Share Tech Mono',monospace;font-size:12px;color:var(--vpn);padding:10px 14px;background:rgba(167,139,250,0.06);border-left:3px solid var(--vpn);margin-bottom:20px;}
+.qopts{display:flex;flex-direction:column;gap:8px;}
+.qopt{background:var(--surface2);border:1px solid var(--border2);color:var(--text);padding:12px 18px;font-family:'Share Tech Mono',monospace;font-size:12px;cursor:pointer;text-align:left;transition:all 0.15s;display:flex;align-items:center;gap:12px;}
+.qopt:hover{border-color:var(--vpn);color:var(--vpn);}
+.qopt.correct{border-color:#4ade80;background:rgba(74,222,128,0.08);color:#4ade80;}
+.qopt.wrong{border-color:var(--red);background:rgba(248,113,113,0.08);color:var(--red);}
+.qltr{width:22px;height:22px;border:1px solid var(--dim);display:flex;align-items:center;justify-content:center;font-size:10px;flex-shrink:0;}
+.qexp{margin-top:14px;padding:14px;border-left:3px solid var(--vpn);font-size:13px;font-weight:300;line-height:1.7;display:none;background:rgba(167,139,250,0.05);}
+.qexp.show{display:block;}
+.qprog{display:flex;gap:5px;margin-bottom:28px;}
+.qpip{flex:1;height:3px;background:var(--border2);transition:background 0.3s;}
+.qpip.done{background:var(--vpn);}.qpip.cur{background:rgba(167,139,250,0.35);}
+.score-wrap{text-align:center;padding:56px;display:none;}
+.score-wrap.show{display:block;}
+.score-n{font-family:'Teko',sans-serif;font-size:100px;letter-spacing:4px;font-weight:700;}
+.score-s{font-family:'Share Tech Mono',monospace;font-size:12px;letter-spacing:2px;color:var(--dim);text-transform:uppercase;margin-bottom:28px;}
+.retry{background:transparent;border:2px solid var(--vpn);color:var(--vpn);padding:12px 32px;font-family:'Share Tech Mono',monospace;font-size:12px;letter-spacing:2px;text-transform:uppercase;cursor:pointer;transition:all 0.15s;}
+.retry:hover{background:var(--vpn);color:var(--bg);}
+
+@media(max-width:760px){.g2,.g3,.g4{grid-template-columns:1fr;}.wrap{padding:24px 16px;}h1{font-size:52px;}}
+</style>
+</head>
+<body>
+
+<nav>
+  <a href="../index.html" class="nav-back">← NetLab</a>
+  <span class="nav-sep">/</span>
+  <div class="nav-title" style="color:var(--vpn)">VPN LAB</div>
+  <div class="nav-tabs">
+    <button class="ntab v active" onclick="showPage('vpn',this)">VPN Basics</button>
+    <button class="ntab i"        onclick="showPage('ike',this)">IPsec / IKE</button>
+    <button class="ntab e"        onclick="showPage('types',this)">VPN Types</button>
+    <button class="ntab"          onclick="showPage('quiz',this)">Quiz</button>
+  </div>
+</nav>
+
+<!-- ═══════════════ VPN BASICS ═══════════════ -->
+<div id="page-vpn" class="page active">
+<div class="wrap">
+  <div class="eyebrow" style="color:var(--vpn)">// Network Security</div>
+  <h1 style="color:var(--vpn)">VIRTUAL<br>PRIVATE<br>NETWORK</h1>
+  <p class="hero-sub">A VPN creates an <strong class="w">encrypted tunnel</strong> through an untrusted network — typically the internet — so that traffic between two endpoints looks like gibberish to anyone watching in between. Understanding VPNs means understanding tunneling, encryption, and authentication.</p>
+
+  <div class="sl">// The Core Problem VPNs Solve</div>
+  <div class="ibox">
+    <p>Imagine your company has offices in New York and London. Without a VPN, connecting them means sending sensitive data across the public internet — where any router along the path could potentially <strong class="w">capture, read, or modify</strong> your packets. This is called a man-in-the-middle attack.</p>
+    <p>A VPN solves this with three things: <strong style="color:var(--vpn)">Tunneling</strong> — wrapping your original packet inside a new one so the real destination is hidden. <strong style="color:var(--enc)">Encryption</strong> — scrambling the contents so even if intercepted, nothing is readable. <strong style="color:var(--ike)">Authentication</strong> — ensuring both ends are really who they say they are before any data flows.</p>
+    <p>The result: two private networks separated by the internet behave as if they're <strong class="w">directly connected</strong>. Traffic that hits the VPN gateway is encrypted, tunneled across the internet, decrypted at the other end, and delivered — all transparently to the end user.</p>
+  </div>
+
+  <div class="g3">
+    <div class="fc" style="border-top:2px solid var(--vpn)">
+      <div class="fc-lbl">// Concept 01</div>
+      <div class="fc-title" style="color:var(--vpn)">Tunneling</div>
+      <div class="fc-body">Encapsulating one packet inside another. The inner packet is the original data. The outer packet has new headers for transport across the public network — hiding the real source and destination.</div>
+    </div>
+    <div class="fc" style="border-top:2px solid var(--enc)">
+      <div class="fc-lbl">// Concept 02</div>
+      <div class="fc-title" style="color:var(--enc)">Encryption</div>
+      <div class="fc-body">Scrambling data using a shared key so only the intended recipient can read it. AES-256 is the current gold standard — it would take longer than the age of the universe to brute-force.</div>
+    </div>
+    <div class="fc" style="border-top:2px solid var(--ike)">
+      <div class="fc-lbl">// Concept 03</div>
+      <div class="fc-title" style="color:var(--ike)">Authentication</div>
+      <div class="fc-body">Verifying both peers are legitimate before establishing the tunnel. Done via pre-shared keys (PSK), digital certificates (PKI), or username/password. Prevents rogue gateways.</div>
+    </div>
+  </div>
+
+  <div class="sl">// What a VPN Packet Looks Like</div>
+  <div class="ibox" style="margin-bottom:4px;">
+    <p>When data leaves your machine destined for the remote office, the VPN gateway adds layers around it. Each layer below is wrapped around the one inside it — like envelopes within envelopes. Press Play to watch the packet being built layer by layer.</p>
+  </div>
+
+  <div class="sim-header">
+    <div><div class="sim-title">Packet Encapsulation</div><div class="sdesc" id="pkt-desc">Watch a plain data packet get wrapped in VPN layers before transmission</div></div>
+    <div class="sim-controls">
+      <button class="spd active" id="ps1" onclick="">1x</button>
+      <button class="play-btn" id="pkt-play" onclick="runPktSim()">&#9654; Play</button>
+    </div>
+  </div>
+
+  <div style="background:var(--surface);border:1px solid var(--border);padding:24px;margin-bottom:12px;">
+    <div style="font-family:'Share Tech Mono',monospace;font-size:10px;color:var(--dim);letter-spacing:2px;text-transform:uppercase;margin-bottom:16px;">// Packet Structure (outermost → innermost)</div>
+    <div class="pkt-stack" id="pkt-stack">
+      <div class="pkt-layer outer" id="pl1">
+        <div class="pkt-icon">🌐</div>
+        <div class="pkt-label">New IP Header (Outer)</div>
+        <div class="pkt-detail">Src: 203.0.113.1 (VPN GW-A) → Dst: 198.51.100.1 (VPN GW-B)</div>
+      </div>
+      <div class="pkt-layer esp" id="pl2">
+        <div class="pkt-icon">🔒</div>
+        <div class="pkt-label">ESP Header — Encrypted Section Starts</div>
+        <div class="pkt-detail">SPI: 0x1a2b3c4d | Seq: 00000001 | Protocol: 50</div>
+      </div>
+      <div class="pkt-layer inner" id="pl3">
+        <div class="pkt-icon">📦</div>
+        <div class="pkt-label">Original IP Header (Inner — Encrypted)</div>
+        <div class="pkt-detail">Src: 10.1.0.100 (NY laptop) → Dst: 10.2.0.50 (London server)</div>
+      </div>
+      <div class="pkt-layer data" id="pl4">
+        <div class="pkt-icon">📄</div>
+        <div class="pkt-label">Original Payload (Encrypted)</div>
+        <div class="pkt-detail">e.g., HTTPS traffic, file transfer, RDP session</div>
+      </div>
+      <div class="pkt-layer esp" id="pl5" style="opacity:0.5;">
+        <div class="pkt-icon">✔</div>
+        <div class="pkt-label">ESP Trailer + Auth Tag</div>
+        <div class="pkt-detail">Padding | Integrity check: HMAC-SHA256</div>
+      </div>
+    </div>
+  </div>
+  <div class="log-area" id="pkt-log"><div class="ll info">[SYSTEM] Press Play to watch encapsulation</div></div>
+
+  <!-- TUNNEL SIM -->
+  <div class="sl">// Simulations — Watch a VPN Tunnel</div>
+  <div class="sc-tabs" id="vpn-sc-tabs">
+    <button class="sc-tab active v" onclick="selVPN(0,this)">01 — Tunnel Establishment</button>
+    <button class="sc-tab" onclick="selVPN(1,this)">02 — Encrypted Data Flow</button>
+    <button class="sc-tab" onclick="selVPN(2,this)">03 — Tunnel Failure & Rekey</button>
+    <button class="sc-tab" onclick="selVPN(3,this)">04 — Split Tunneling</button>
+  </div>
+  <div class="sim-header">
+    <div><div class="sim-title" id="vpn-sim-title">Tunnel Establishment</div><div class="sdesc" id="vpn-desc">Watch two VPN gateways negotiate and build an encrypted tunnel</div></div>
+    <div class="sim-controls">
+      <button class="spd" id="vs1" onclick="setSpd('vpn',1)">1x</button>
+      <button class="spd active" id="vs2" onclick="setSpd('vpn',2)">2x</button>
+      <button class="play-btn" id="vpn-play" onclick="runVPN()">&#9654; Play</button>
+    </div>
+  </div>
+
+  <div class="topo-wrap">
+    <svg id="vpn-svg" viewBox="0 0 900 280" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <filter id="vglow"><feGaussianBlur stdDeviation="3" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+        <filter id="eglow"><feGaussianBlur stdDeviation="4" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+      </defs>
+      <pattern id="vg" width="40" height="40" patternUnits="userSpaceOnUse"><path d="M40 0L0 0 0 40" fill="none" stroke="#121a2a" stroke-width="0.5"/></pattern>
+      <rect width="900" height="280" fill="url(#vg)"/>
+
+      <!-- Network zones -->
+      <rect x="10" y="20" width="185" height="240" rx="5" fill="rgba(167,139,250,0.03)" stroke="rgba(167,139,250,0.18)" stroke-width="1" stroke-dasharray="5,4"/>
+      <text x="24" y="38" font-family="Share Tech Mono,monospace" font-size="10" fill="rgba(167,139,250,0.45)" letter-spacing="2">NY OFFICE LAN</text>
+      <text x="24" y="50" font-family="Share Tech Mono,monospace" font-size="9" fill="#1e3048">10.1.0.0/24</text>
+
+      <rect x="390" y="20" width="120" height="240" rx="5" fill="rgba(248,113,113,0.02)" stroke="rgba(248,113,113,0.1)" stroke-width="1" stroke-dasharray="3,5"/>
+      <text x="406" y="38" font-family="Share Tech Mono,monospace" font-size="10" fill="rgba(248,113,113,0.35)" letter-spacing="1">INTERNET</text>
+      <text x="406" y="50" font-family="Share Tech Mono,monospace" font-size="9" fill="#1e3048">UNTRUSTED</text>
+
+      <rect x="705" y="20" width="185" height="240" rx="5" fill="rgba(52,211,153,0.03)" stroke="rgba(52,211,153,0.15)" stroke-width="1" stroke-dasharray="5,4"/>
+      <text x="720" y="38" font-family="Share Tech Mono,monospace" font-size="10" fill="rgba(52,211,153,0.4)" letter-spacing="2">LONDON LAN</text>
+      <text x="720" y="50" font-family="Share Tech Mono,monospace" font-size="9" fill="#1e3048">10.2.0.0/24</text>
+
+      <!-- Internal links -->
+      <line x1="100" y1="140" x2="196" y2="140" stroke="#1e3048" stroke-width="1.5"/>
+      <line x1="704" y1="140" x2="800" y2="140" stroke="#1e3048" stroke-width="1.5"/>
+
+      <!-- Internet links -->
+      <line id="vlink-left" x1="274" y1="140" x2="390" y2="140" stroke="#1e3048" stroke-width="1.5" stroke-dasharray="4,4"/>
+      <line id="vlink-right" x1="510" y1="140" x2="624" y2="140" stroke="#1e3048" stroke-width="1.5" stroke-dasharray="4,4"/>
+
+      <!-- Tunnel line (hidden until established) -->
+      <line id="vtunnel" x1="274" y1="140" x2="624" y2="140" stroke="var(--vpn)" stroke-width="4" opacity="0" filter="url(#eglow)"/>
+      <!-- Tunnel border lines -->
+      <line id="vtunnel-top" x1="274" y1="128" x2="624" y2="128" stroke="var(--vpn)" stroke-width="1" stroke-dasharray="4,3" opacity="0"/>
+      <line id="vtunnel-bot" x1="274" y1="152" x2="624" y2="152" stroke="var(--vpn)" stroke-width="1" stroke-dasharray="4,3" opacity="0"/>
+
+      <!-- Laptop NY -->
+      <g id="vlaptop"><rect x="30" y="114" width="64" height="52" rx="4" fill="#090c18" stroke="#1e3048" stroke-width="1.5"/><text x="62" y="138" text-anchor="middle" font-size="18">&#128187;</text><text x="62" y="152" text-anchor="middle" font-family="Share Tech Mono,monospace" font-size="9" fill="#8599b5">NY Laptop</text><text x="62" y="162" text-anchor="middle" font-family="Share Tech Mono,monospace" font-size="8" fill="#1e3048">10.1.0.100</text></g>
+
+      <!-- VPN GW A -->
+      <g id="vgwa"><rect x="196" y="108" width="78" height="64" rx="4" fill="#090c18" stroke="#1e3048" stroke-width="1.5"/><text x="235" y="136" text-anchor="middle" font-size="20">&#128274;</text><text x="235" y="150" text-anchor="middle" font-family="Share Tech Mono,monospace" font-size="9" fill="#8599b5">VPN-GW-A</text><text x="235" y="161" text-anchor="middle" font-family="Share Tech Mono,monospace" font-size="8" fill="#1e3048">203.0.113.1</text></g>
+
+      <!-- Internet cloud -->
+      <g id="vcloud">
+        <ellipse cx="450" cy="140" rx="52" ry="36" fill="#0d1020" stroke="#1e3048" stroke-width="1"/>
+        <text x="450" y="135" text-anchor="middle" font-size="18">&#9925;</text>
+        <text x="450" y="152" text-anchor="middle" font-family="Share Tech Mono,monospace" font-size="8" fill="#1e3048">INTERNET</text>
+      </g>
+
+      <!-- Evil actor (shown in certain scenarios) -->
+      <g id="vevil" opacity="0">
+        <text x="450" y="95" text-anchor="middle" font-size="16">&#128373;</text>
+        <text x="450" y="108" text-anchor="middle" font-family="Share Tech Mono,monospace" font-size="8" fill="var(--red)">ATTACKER</text>
+        <line x1="450" y1="112" x2="450" y2="125" stroke="var(--red)" stroke-width="1" stroke-dasharray="2,2"/>
+      </g>
+
+      <!-- VPN GW B -->
+      <g id="vgwb"><rect x="626" y="108" width="78" height="64" rx="4" fill="#090c18" stroke="#1e3048" stroke-width="1.5"/><text x="665" y="136" text-anchor="middle" font-size="20">&#128274;</text><text x="665" y="150" text-anchor="middle" font-family="Share Tech Mono,monospace" font-size="9" fill="#8599b5">VPN-GW-B</text><text x="665" y="161" text-anchor="middle" font-family="Share Tech Mono,monospace" font-size="8" fill="#1e3048">198.51.100.1</text></g>
+
+      <!-- Server London -->
+      <g id="vserver"><rect x="806" y="114" width="64" height="52" rx="4" fill="#090c18" stroke="#1e3048" stroke-width="1.5"/><text x="838" y="138" text-anchor="middle" font-size="18">&#128462;</text><text x="838" y="152" text-anchor="middle" font-family="Share Tech Mono,monospace" font-size="9" fill="#8599b5">London Svr</text><text x="838" y="162" text-anchor="middle" font-family="Share Tech Mono,monospace" font-size="8" fill="#1e3048">10.2.0.50</text></g>
+
+      <!-- State badges -->
+      <g id="vsa" opacity="0"><rect x="188" y="184" width="94" height="18" rx="3" fill="rgba(167,139,250,0.15)" stroke="var(--vpn)" stroke-width="1"/><text id="vsa-t" x="235" y="197" text-anchor="middle" font-family="Share Tech Mono,monospace" font-size="9" fill="var(--vpn)">IDLE</text></g>
+      <g id="vsb" opacity="0"><rect x="618" y="184" width="94" height="18" rx="3" fill="rgba(167,139,250,0.15)" stroke="var(--vpn)" stroke-width="1"/><text id="vsb-t" x="665" y="197" text-anchor="middle" font-family="Share Tech Mono,monospace" font-size="9" fill="var(--vpn)">IDLE</text></g>
+
+      <!-- Tunnel label -->
+      <g id="vtunnel-lbl" opacity="0">
+        <rect x="380" y="108" width="140" height="20" rx="3" fill="rgba(167,139,250,0.12)" stroke="rgba(167,139,250,0.3)" stroke-width="1"/>
+        <text id="vtunnel-txt" x="450" y="122" text-anchor="middle" font-family="Share Tech Mono,monospace" font-size="9" fill="var(--vpn)" letter-spacing="1">AES-256 TUNNEL</text>
+      </g>
+
+      <!-- Encrypted packet label -->
+      <text id="vpkt-lbl" x="-30" y="130" text-anchor="middle" font-family="Share Tech Mono,monospace" font-size="9" fill="var(--enc)" opacity="0">ENCRYPTED</text>
+
+      <!-- Animated packet -->
+      <circle id="vpkt" cx="-20" cy="140" r="8" fill="var(--vpn)" opacity="0" filter="url(#vglow)"/>
+
+      <!-- Split tunnel arrows (scenario 4) -->
+      <g id="vsplit" opacity="0">
+        <line x1="235" y1="108" x2="235" y2="72" stroke="var(--vpn)" stroke-width="2" stroke-dasharray="3,3"/>
+        <text x="235" y="66" text-anchor="middle" font-family="Share Tech Mono,monospace" font-size="9" fill="var(--vpn)">VPN (10.2.x.x)</text>
+        <line x1="250" y1="108" x2="310" y2="68" stroke="var(--orange)" stroke-width="2" stroke-dasharray="3,3"/>
+        <text x="336" y="65" text-anchor="middle" font-family="Share Tech Mono,monospace" font-size="9" fill="var(--orange)">Direct (YouTube etc)</text>
+      </g>
+    </svg>
+  </div>
+  <div class="log-area" id="vpn-log"><div class="ll info">[SYSTEM] Select a scenario and press Play</div></div>
+</div>
+</div>
+
+<!-- ═══════════════ IPsec / IKE ═══════════════ -->
+<div id="page-ike" class="page">
+<div class="wrap">
+  <div class="eyebrow" style="color:var(--ike)">// The Protocol Suite</div>
+  <h1 style="color:var(--ike)">IPsec<br>& IKE</h1>
+  <p class="hero-sub">IPsec is the industry-standard protocol suite for securing IP traffic. IKE (Internet Key Exchange) is the negotiation protocol that sets up IPsec. Together they handle authentication, key exchange, and encrypted data transport.</p>
+
+  <div class="sl">// IPsec Architecture</div>
+  <div class="ibox">
+    <p>IPsec is not a single protocol — it's a <strong class="w">suite of protocols</strong> that work together. At the highest level it has two modes and two protocols to choose from:</p>
+    <p><strong style="color:var(--ike)">Transport Mode</strong> — only the payload is encrypted. The original IP header is kept intact. Used for end-to-end between two hosts (e.g., a laptop directly to a server). The real IP addresses are visible to network devices along the path.</p>
+    <p><strong style="color:var(--vpn)">Tunnel Mode</strong> — the entire original packet (header + payload) is encrypted and wrapped in a new IP header. Used for site-to-site VPNs between two gateways. The internal IP addresses are completely hidden from anyone on the internet.</p>
+  </div>
+
+  <div class="g2" style="margin-bottom:24px;">
+    <div class="ibox" style="border-top:2px solid var(--ike);margin-bottom:0">
+      <div style="font-family:'Teko',sans-serif;font-size:24px;color:var(--ike);letter-spacing:2px;margin-bottom:12px;font-weight:600">AH — Authentication Header</div>
+      <p>Provides <strong class="w">integrity and authentication</strong> — proves the packet wasn't tampered with and came from a legitimate sender. Uses HMAC (SHA-256/SHA-384).</p>
+      <p>⚠ AH does NOT encrypt the payload — anyone can still read the data. It only signs it. AH is rarely used alone in modern deployments.</p>
+    </div>
+    <div class="ibox" style="border-top:2px solid var(--enc);margin-bottom:0">
+      <div style="font-family:'Teko',sans-serif;font-size:24px;color:var(--enc);letter-spacing:2px;margin-bottom:12px;font-weight:600">ESP — Encapsulating Security Payload</div>
+      <p>Provides <strong class="w">confidentiality, integrity, and authentication</strong>. Encrypts the payload using AES and adds an integrity check. This is what's used in nearly all VPN deployments.</p>
+      <p>✦ ESP in tunnel mode is the standard for site-to-site VPNs. Protocol number 50 in the IP header.</p>
+    </div>
+  </div>
+
+  <div class="sl">// IKE — Internet Key Exchange</div>
+  <div class="ibox">
+    <p>Before two VPN gateways can exchange encrypted traffic, they need to agree on <strong class="w">which algorithms to use</strong> and <strong class="w">exchange encryption keys</strong> securely. This is IKE's job — it runs on <strong style="color:var(--ike)">UDP port 500</strong>.</p>
+    <p>IKE works in two phases. <strong style="color:var(--ike)">Phase 1</strong> establishes a secure, authenticated channel between the two peers — this is called the ISAKMP SA (Security Association). <strong style="color:var(--vpn)">Phase 2</strong> uses that secure channel to negotiate the actual IPsec SAs that will protect the data traffic.</p>
+    <p>Modern deployments use <strong class="w">IKEv2</strong> — faster, more reliable, supports MOBIKE (surviving IP address changes, important for mobile VPN clients), and uses fewer round trips than IKEv1.</p>
+  </div>
+
+  <div class="g3">
+    <div class="fc" style="border-top:2px solid var(--ike)">
+      <div class="fc-lbl">// IKE Phase 1</div>
+      <div class="fc-title" style="color:var(--ike)">ISAKMP SA</div>
+      <div class="fc-body">Peers authenticate each other (PSK or certificates). Negotiate encryption (AES), hash (SHA), DH group, lifetime. Creates a secure management channel for Phase 2.</div>
+    </div>
+    <div class="fc" style="border-top:2px solid var(--vpn)">
+      <div class="fc-lbl">// IKE Phase 2</div>
+      <div class="fc-title" style="color:var(--vpn)">IPsec SA</div>
+      <div class="fc-body">Uses the Phase 1 channel to negotiate the actual data encryption parameters. Creates two unidirectional SAs (one each way). Sets lifetime and PFS (Perfect Forward Secrecy).</div>
+    </div>
+    <div class="fc" style="border-top:2px solid var(--enc)">
+      <div class="fc-lbl">// Security Association</div>
+      <div class="fc-title" style="color:var(--enc)">SA / SPI</div>
+      <div class="fc-body">A Security Association is a one-way agreement on all crypto parameters. Identified by an SPI (Security Parameter Index) — a 32-bit number in the ESP header that tells the receiver which SA to use.</div>
+    </div>
+  </div>
+
+  <div class="sl">// Simulations — Watch IKE Negotiate</div>
+  <div class="sc-tabs" id="ike-sc-tabs">
+    <button class="sc-tab active i" onclick="selIKE(0,this)">01 — IKE Phase 1</button>
+    <button class="sc-tab" onclick="selIKE(1,this)">02 — IKE Phase 2</button>
+    <button class="sc-tab" onclick="selIKE(2,this)">03 — Diffie-Hellman Key Exchange</button>
+    <button class="sc-tab" onclick="selIKE(3,this)">04 — SA Rekeying</button>
+  </div>
+  <div class="sim-header">
+    <div><div class="sim-title" id="ike-sim-title">IKE Phase 1 — ISAKMP SA</div><div class="sdesc" id="ike-desc">Peers authenticate and create a secure management channel</div></div>
+    <div class="sim-controls">
+      <button class="spd" id="iks1" onclick="setSpd('ike',1)">1x</button>
+      <button class="spd active" id="iks2" onclick="setSpd('ike',2)">2x</button>
+      <button class="play-btn ike" id="ike-play" onclick="runIKE()">&#9654; Play</button>
+    </div>
+  </div>
+
+  <div class="topo-wrap">
+    <svg id="ike-svg" viewBox="0 0 900 260" xmlns="http://www.w3.org/2000/svg">
+      <defs><filter id="ikeglow"><feGaussianBlur stdDeviation="3" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>
+      <pattern id="ikg" width="40" height="40" patternUnits="userSpaceOnUse"><path d="M40 0L0 0 0 40" fill="none" stroke="#121a2a" stroke-width="0.5"/></pattern>
+      <rect width="900" height="260" fill="url(#ikg)"/>
+
+      <!-- Peers -->
+      <g id="ikea"><rect x="60" y="90" width="120" height="80" rx="4" fill="#090c18" stroke="#1e3048" stroke-width="1.5"/><text x="120" y="124" text-anchor="middle" font-size="24">&#128274;</text><text x="120" y="142" text-anchor="middle" font-family="Share Tech Mono,monospace" font-size="9" fill="#8599b5">VPN-GW-A</text><text x="120" y="153" text-anchor="middle" font-family="Share Tech Mono,monospace" font-size="8" fill="#1e3048">203.0.113.1:500</text></g>
+      <g id="ikeb"><rect x="720" y="90" width="120" height="80" rx="4" fill="#090c18" stroke="#1e3048" stroke-width="1.5"/><text x="780" y="124" text-anchor="middle" font-size="24">&#128274;</text><text x="780" y="142" text-anchor="middle" font-family="Share Tech Mono,monospace" font-size="9" fill="#8599b5">VPN-GW-B</text><text x="780" y="153" text-anchor="middle" font-family="Share Tech Mono,monospace" font-size="8" fill="#1e3048">198.51.100.1:500</text></g>
+
+      <!-- Channel line -->
+      <line id="ike-ch" x1="180" y1="130" x2="720" y2="130" stroke="#1e3048" stroke-width="1.5" stroke-dasharray="6,4"/>
+
+      <!-- Phase indicators -->
+      <g id="ike-p1-lbl" opacity="0"><rect x="340" y="106" width="220" height="20" rx="3" fill="rgba(56,189,248,0.12)" stroke="rgba(56,189,248,0.3)" stroke-width="1"/><text x="450" y="120" text-anchor="middle" font-family="Share Tech Mono,monospace" font-size="9" fill="var(--ike)" letter-spacing="1">IKE PHASE 1 — ISAKMP SA</text></g>
+      <g id="ike-p2-lbl" opacity="0"><rect x="340" y="106" width="220" height="20" rx="3" fill="rgba(167,139,250,0.12)" stroke="rgba(167,139,250,0.3)" stroke-width="1"/><text x="450" y="120" text-anchor="middle" font-family="Share Tech Mono,monospace" font-size="9" fill="var(--vpn)" letter-spacing="1">IKE PHASE 2 — IPSEC SA</text></g>
+
+      <!-- Animated packet -->
+      <circle id="ikepkt" cx="-20" cy="130" r="7" fill="var(--ike)" opacity="0" filter="url(#ikeglow)"/>
+      <text id="ikepkt-l" x="-20" y="116" text-anchor="middle" font-family="Share Tech Mono,monospace" font-size="9" fill="var(--ike)" opacity="0">MSG</text>
+
+      <!-- State badges -->
+      <g id="ikesa" opacity="0"><rect x="52" y="182" width="136" height="20" rx="3" fill="rgba(56,189,248,0.12)" stroke="var(--ike)" stroke-width="1"/><text id="ikesa-t" x="120" y="196" text-anchor="middle" font-family="Share Tech Mono,monospace" font-size="9" fill="var(--ike)">IDLE</text></g>
+      <g id="ikesb" opacity="0"><rect x="712" y="182" width="136" height="20" rx="3" fill="rgba(56,189,248,0.12)" stroke="var(--ike)" stroke-width="1"/><text id="ikesb-t" x="780" y="196" text-anchor="middle" font-family="Share Tech Mono,monospace" font-size="9" fill="var(--ike)">IDLE</text></g>
+
+      <!-- DH visualization boxes -->
+      <g id="dh-viz" opacity="0">
+        <rect x="180" y="200" width="200" height="50" rx="3" fill="rgba(0,0,0,0.6)" stroke="var(--ike)" stroke-width="1"/>
+        <text x="190" y="218" font-family="Share Tech Mono,monospace" font-size="9" fill="var(--ike)">GW-A Public Key:</text>
+        <text id="dh-a" x="190" y="232" font-family="Share Tech Mono,monospace" font-size="9" fill="#8599b5">g^a mod p = ?</text>
+        <text id="dh-a2" x="190" y="244" font-family="Share Tech Mono,monospace" font-size="9" fill="var(--enc)"></text>
+        <rect x="520" y="200" width="200" height="50" rx="3" fill="rgba(0,0,0,0.6)" stroke="var(--ike)" stroke-width="1"/>
+        <text x="530" y="218" font-family="Share Tech Mono,monospace" font-size="9" fill="var(--ike)">GW-B Public Key:</text>
+        <text id="dh-b" x="530" y="232" font-family="Share Tech Mono,monospace" font-size="9" fill="#8599b5">g^b mod p = ?</text>
+        <text id="dh-b2" x="530" y="244" font-family="Share Tech Mono,monospace" font-size="9" fill="var(--enc)"></text>
+        <text id="dh-shared" x="450" y="195" text-anchor="middle" font-family="Share Tech Mono,monospace" font-size="9" fill="var(--enc)" opacity="0"></text>
+      </g>
+    </svg>
+  </div>
+  <div class="log-area" id="ike-log"><div class="ll info">[SYSTEM] Select a scenario and press Play</div></div>
+</div>
+</div>
+
+<!-- ═══════════════ VPN TYPES ═══════════════ -->
+<div id="page-types" class="page">
+<div class="wrap">
+  <div class="eyebrow" style="color:var(--enc)">// Deployment Scenarios</div>
+  <h1 style="color:var(--enc)">VPN<br>TYPES</h1>
+  <p class="hero-sub">VPNs aren't one-size-fits-all. Site-to-site VPNs, remote access VPNs, SSL VPNs, and MPLS VPNs all solve different problems. Knowing which to recommend in an interview is as important as knowing how they work.</p>
+
+  <div class="sl">// Side-by-Side Comparison</div>
+  <div style="background:var(--surface);border:1px solid var(--border);overflow:auto;margin-bottom:28px;">
+    <table class="ctbl">
+      <thead><tr><th>Type</th><th style="color:var(--vpn)">Site-to-Site</th><th style="color:var(--ike)">Remote Access</th><th style="color:var(--enc)">SSL/TLS VPN</th><th style="color:var(--yellow)">MPLS VPN</th></tr></thead>
+      <tbody>
+        <tr><td class="cprop">Use Case</td><td class="cv">Connecting two offices permanently</td><td class="ci">Employee connecting from home/travel</td><td class="ce">Browser-based or clientless access</td><td style="color:var(--yellow)">ISP-managed enterprise WAN</td></tr>
+        <tr><td class="cprop">Protocol</td><td class="cv">IPsec / IKEv2</td><td class="ci">IPsec, L2TP/IPsec, WireGuard</td><td class="ce">TLS (port 443)</td><td style="color:var(--yellow)">MPLS labels + BGP</td></tr>
+        <tr><td class="cprop">Authentication</td><td class="cv">Pre-shared key or certificates</td><td class="ci">Username/password + MFA + certs</td><td class="ce">Username/password, certificates</td><td style="color:var(--yellow)">BGP peering, ISP-managed</td></tr>
+        <tr><td class="cprop">Client Software</td><td class="cv">None (gateway-to-gateway)</td><td class="ci">VPN client required</td><td class="ce">Browser or lightweight client</td><td style="color:var(--yellow)">None (ISP-handled)</td></tr>
+        <tr><td class="cprop">Firewall Friendly</td><td class="cv">UDP 500 + ESP (proto 50)</td><td class="ci">UDP 500/4500 (NAT-T)</td><td class="ce">Port 443 — always open</td><td style="color:var(--yellow)">Fully managed by ISP</td></tr>
+        <tr><td class="cprop">Encryption</td><td class="cv">AES-256-GCM (data plane)</td><td class="ci">AES-256-GCM</td><td class="ce">TLS 1.3 (same as HTTPS)</td><td style="color:var(--yellow)">Optional (MPLS is label-switched)</td></tr>
+        <tr><td class="cprop">Speed</td><td class="cv">High — always-on, no user overhead</td><td class="ci">Variable — depends on user connection</td><td class="ce">High — TLS optimized</td><td style="color:var(--yellow)">Very high — ISP backbone</td></tr>
+        <tr><td class="cprop">Example Products</td><td class="cv">Cisco ASA, Palo Alto, pfSense</td><td class="ci">Cisco AnyConnect, WireGuard, OpenVPN</td><td class="ce">Cisco AnyConnect SSL, F5 APM</td><td style="color:var(--yellow)">AT&T, Verizon, Lumen</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="sl">// Simulations — Compare VPN Types</div>
+  <div class="sc-tabs" id="enc-sc-tabs">
+    <button class="sc-tab active e" onclick="selENC(0,this)">01 — Site-to-Site IPsec</button>
+    <button class="sc-tab" onclick="selENC(1,this)">02 — Remote Access VPN</button>
+    <button class="sc-tab" onclick="selENC(2,this)">03 — SSL VPN</button>
+    <button class="sc-tab" onclick="selENC(3,this)">04 — No VPN (Danger)</button>
+  </div>
+  <div class="sim-header">
+    <div><div class="sim-title" id="enc-sim-title">Site-to-Site IPsec VPN</div><div class="sdesc" id="enc-desc">Permanent encrypted tunnel between two office gateways</div></div>
+    <div class="sim-controls">
+      <button class="spd" id="ens1" onclick="setSpd('enc',1)">1x</button>
+      <button class="spd active" id="ens2" onclick="setSpd('enc',2)">2x</button>
+      <button class="play-btn enc" id="enc-play" onclick="runENC()">&#9654; Play</button>
+    </div>
+  </div>
+
+  <div class="topo-wrap">
+    <svg id="enc-svg" viewBox="0 0 900 280" xmlns="http://www.w3.org/2000/svg">
+      <defs><filter id="encglow"><feGaussianBlur stdDeviation="3" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>
+      <pattern id="encg" width="40" height="40" patternUnits="userSpaceOnUse"><path d="M40 0L0 0 0 40" fill="none" stroke="#121a2a" stroke-width="0.5"/></pattern>
+      <rect width="900" height="280" fill="url(#encg)"/>
+
+      <!-- Zones -->
+      <rect x="10" y="20" width="175" height="240" rx="5" fill="rgba(167,139,250,0.03)" stroke="rgba(167,139,250,0.15)" stroke-width="1" stroke-dasharray="5,4"/>
+      <text x="22" y="38" font-family="Share Tech Mono,monospace" font-size="10" fill="rgba(167,139,250,0.4)" letter-spacing="2">OFFICE / HOME</text>
+      <rect x="380" y="20" width="140" height="240" rx="5" fill="rgba(248,113,113,0.02)" stroke="rgba(248,113,113,0.1)" stroke-width="1" stroke-dasharray="3,5"/>
+      <text x="400" y="38" font-family="Share Tech Mono,monospace" font-size="10" fill="rgba(248,113,113,0.3)" letter-spacing="1">INTERNET</text>
+      <rect x="715" y="20" width="175" height="240" rx="5" fill="rgba(52,211,153,0.03)" stroke="rgba(52,211,153,0.12)" stroke-width="1" stroke-dasharray="5,4"/>
+      <text x="728" y="38" font-family="Share Tech Mono,monospace" font-size="10" fill="rgba(52,211,153,0.35)" letter-spacing="2">CORP NETWORK</text>
+
+      <!-- Nodes (reused across scenarios via JS) -->
+      <g id="eclient"><rect x="22" y="114" width="64" height="52" rx="4" fill="#090c18" stroke="#1e3048" stroke-width="1.5"/><text x="54" y="138" text-anchor="middle" font-size="18">&#128187;</text><text id="eclient-lbl" x="54" y="152" text-anchor="middle" font-family="Share Tech Mono,monospace" font-size="9" fill="#8599b5">Client</text><text id="eclient-ip" x="54" y="163" text-anchor="middle" font-family="Share Tech Mono,monospace" font-size="8" fill="#1e3048">10.1.0.5</text></g>
+      <g id="egw" opacity="1"><rect x="185" y="108" width="72" height="64" rx="4" fill="#090c18" stroke="#1e3048" stroke-width="1.5"/><text x="221" y="136" text-anchor="middle" font-size="20">&#128274;</text><text id="egw-lbl" x="221" y="150" text-anchor="middle" font-family="Share Tech Mono,monospace" font-size="9" fill="#8599b5">VPN GW</text><text x="221" y="161" text-anchor="middle" font-family="Share Tech Mono,monospace" font-size="8" fill="#1e3048">203.0.113.1</text></g>
+      <line id="elink-local" x1="86" y1="140" x2="185" y2="140" stroke="#1e3048" stroke-width="1.5"/>
+      <line id="elink-l" x1="257" y1="140" x2="380" y2="140" stroke="#1e3048" stroke-width="1.5" stroke-dasharray="4,4"/>
+      <ellipse cx="450" cy="140" rx="52" ry="36" fill="#0d1020" stroke="#1e3048" stroke-width="1"/>
+      <text x="450" y="135" text-anchor="middle" font-size="16">&#9925;</text>
+      <text x="450" y="150" text-anchor="middle" font-family="Share Tech Mono,monospace" font-size="8" fill="#1e3048">INTERNET</text>
+      <line id="elink-r" x1="502" y1="140" x2="620" y2="140" stroke="#1e3048" stroke-width="1.5" stroke-dasharray="4,4"/>
+      <g id="edst"><rect x="622" y="114" width="64" height="52" rx="4" fill="#090c18" stroke="#1e3048" stroke-width="1.5"/><text x="654" y="138" text-anchor="middle" font-size="18">&#128462;</text><text id="edst-lbl" x="654" y="152" text-anchor="middle" font-family="Share Tech Mono,monospace" font-size="9" fill="#8599b5">Corp Server</text><text id="edst-ip" x="654" y="163" text-anchor="middle" font-family="Share Tech Mono,monospace" font-size="8" fill="#1e3048">10.2.0.50</text></g>
+      <g id="edst2" opacity="0"><rect x="726" y="114" width="64" height="52" rx="4" fill="#090c18" stroke="#1e3048" stroke-width="1.5"/><text x="758" y="138" text-anchor="middle" font-size="18">&#128462;</text><text x="758" y="152" text-anchor="middle" font-family="Share Tech Mono,monospace" font-size="9" fill="#8599b5">Corp Server</text><text x="758" y="163" text-anchor="middle" font-family="Share Tech Mono,monospace" font-size="8" fill="#1e3048">10.2.0.50</text></g>
+      <g id="egw2" opacity="0"><rect x="620" y="108" width="72" height="64" rx="4" fill="#090c18" stroke="#1e3048" stroke-width="1.5"/><text x="656" y="136" text-anchor="middle" font-size="20">&#128274;</text><text x="656" y="150" text-anchor="middle" font-family="Share Tech Mono,monospace" font-size="9" fill="#8599b5">VPN GW-B</text><text x="656" y="161" text-anchor="middle" font-family="Share Tech Mono,monospace" font-size="8" fill="#1e3048">198.51.100.1</text></g>
+
+      <!-- Attacker -->
+      <g id="eevil" opacity="0">
+        <text x="450" y="92" text-anchor="middle" font-size="16">&#128373;</text>
+        <text x="450" y="106" text-anchor="middle" font-family="Share Tech Mono,monospace" font-size="8" fill="var(--red)">ATTACKER</text>
+        <line x1="450" y1="110" x2="450" y2="122" stroke="var(--red)" stroke-width="1.5" stroke-dasharray="2,2"/>
+      </g>
+
+      <!-- Tunnel line -->
+      <line id="etunnel" x1="257" y1="140" x2="620" y2="140" stroke="var(--enc)" stroke-width="3.5" opacity="0" filter="url(#encglow)"/>
+      <line id="etunnel-top" x1="257" y1="130" x2="620" y2="130" stroke="var(--enc)" stroke-width="1" stroke-dasharray="4,3" opacity="0"/>
+      <line id="etunnel-bot" x1="257" y1="150" x2="620" y2="150" stroke="var(--enc)" stroke-width="1" stroke-dasharray="4,3" opacity="0"/>
+
+      <!-- Tunnel label -->
+      <g id="etunnel-lbl" opacity="0"><rect x="360" y="108" width="180" height="18" rx="3" fill="rgba(52,211,153,0.12)" stroke="rgba(52,211,153,0.3)" stroke-width="1"/><text id="etunnel-txt" x="450" y="121" text-anchor="middle" font-family="Share Tech Mono,monospace" font-size="9" fill="var(--enc)" letter-spacing="1">ENCRYPTED TUNNEL</text></g>
+
+      <!-- Packet -->
+      <circle id="epkt2" cx="-20" cy="140" r="8" fill="var(--enc)" opacity="0" filter="url(#encglow)"/>
+      <text id="epkt2-l" x="-20" y="126" text-anchor="middle" font-family="Share Tech Mono,monospace" font-size="9" fill="var(--enc)" opacity="0">DATA</text>
+
+      <!-- State badge -->
+      <g id="enc-badge" opacity="0"><rect x="356" y="162" width="188" height="18" rx="3" fill="rgba(52,211,153,0.1)" stroke="var(--enc)" stroke-width="1"/><text id="enc-badge-t" x="450" y="175" text-anchor="middle" font-family="Share Tech Mono,monospace" font-size="9" fill="var(--enc)">STATUS</text></g>
+    </svg>
+  </div>
+  <div class="log-area" id="enc-log"><div class="ll info">[SYSTEM] Select a scenario and press Play</div></div>
+</div>
+</div>
+
+<!-- ═══════════════ QUIZ ═══════════════ -->
+<div id="page-quiz" class="page">
+<div class="wrap" style="max-width:820px;">
+  <div class="eyebrow" style="color:var(--vpn)">// Knowledge Check</div>
+  <h1 style="font-size:72px">QUIZ</h1>
+  <div class="qprog" id="qprog"></div>
+  <div id="qc"></div>
+  <div class="score-wrap" id="sw"><div class="score-n" id="sn">0/8</div><div class="score-s">Questions Correct</div><button class="retry" onclick="initQuiz()">&#8634; Retry</button></div>
+</div>
+</div>
+
+<script>
+// ── PAGE NAV ──
+function showPage(n,btn){document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));document.querySelectorAll('.ntab').forEach(t=>t.classList.remove('active'));document.getElementById('page-'+n).classList.add('active');btn.classList.add('active');if(n==='quiz')initQuiz();}
+
+// ── SPEED ──
+const spds={vpn:2,ike:2,enc:2};
+function setSpd(p,s){spds[p]=s;const pfx={vpn:'vs',ike:'iks',enc:'ens'}[p];document.getElementById(pfx+'1').classList.toggle('active',s===1);document.getElementById(pfx+'2').classList.toggle('active',s===2);}
+function w(p,ms){return new Promise(r=>setTimeout(r,ms/spds[p]));}
+
+// ── LOG ──
+function log(id,type,msg){const e=document.createElement('div');e.className='ll '+type;e.textContent=msg;const a=document.getElementById(id+'-log');a.appendChild(e);a.scrollTop=a.scrollHeight;}
+function clrLog(id){document.getElementById(id+'-log').innerHTML='';}
+function setDesc(id,t){const e=document.getElementById(id+'-desc');if(e)e.textContent=t;}
+
+// ── SVG HELPERS ──
+function sa(id,attrs){const e=document.getElementById(id);if(!e)return;Object.entries(attrs).forEach(([k,v])=>e.setAttribute(k,v));}
+function st(id,t){const e=document.getElementById(id);if(e)e.textContent=t;}
+function show(id){sa(id,{opacity:'1'});}
+function hide(id){sa(id,{opacity:'0'});}
+function lc(id,col,w=1.5,da='none'){const e=document.getElementById(id);if(!e)return;e.setAttribute('stroke',col);e.setAttribute('stroke-width',w);e.setAttribute('stroke-dasharray',da||'none');e.setAttribute('opacity','0.9');}
+function rl(id){const e=document.getElementById(id);if(!e)return;e.setAttribute('stroke','#1e3048');e.setAttribute('stroke-width','1.5');e.setAttribute('stroke-dasharray','4,4');e.setAttribute('opacity','0.6');}
+function flash(id,col='var(--vpn)'){const e=document.getElementById(id);if(!e)return;const r=e.querySelector('rect');if(!r)return;r.setAttribute('stroke',col);r.setAttribute('stroke-width','2.5');setTimeout(()=>{r.setAttribute('stroke','#1e3048');r.setAttribute('stroke-width','1.5');},600);}
+
+function anim(pid,lid,x1,y1,x2,y2,lbl,col){
+  return new Promise(res=>{
+    sa(pid,{cx:x1,cy:y1,fill:col,opacity:'1'});
+    if(lid){sa(lid,{x:x1,y:y1-14,fill:col,opacity:'1'});st(lid,lbl);}
+    const dur=700,s=performance.now();
+    function f(n){const t=Math.min((n-s)/dur,1),e2=t<0.5?2*t*t:-1+(4-2*t)*t,x=x1+(x2-x1)*e2,y=y1+(y2-y1)*e2;sa(pid,{cx:x,cy:y});if(lid)sa(lid,{x,y:y-14});if(t<1)requestAnimationFrame(f);else{hide(pid);if(lid)hide(lid);res();}}
+    requestAnimationFrame(f);
+  });}
+
+// ── PACKET ENCAP SIM ──
+async function runPktSim(){
+  const btn=document.getElementById('pkt-play');btn.disabled=true;btn.textContent='&#9632; Running';
+  clrLog('pkt');
+  ['pl1','pl2','pl3','pl4','pl5'].forEach(id=>document.getElementById(id)?.classList.remove('show'));
+  document.getElementById('pkt-desc').textContent='Building layers from inside out...';
+
+  log('pkt','info','[ENCAP] Starting with the original user data...');await new Promise(r=>setTimeout(r,600));
+  const l4=document.getElementById('pl4');if(l4){l4.classList.add('show');}
+  log('pkt','warn','[DATA] HTTPS payload — unencrypted at this point');await new Promise(r=>setTimeout(r,700));
+
+  const l3=document.getElementById('pl3');if(l3){l3.classList.add('show');}
+  log('pkt','ike','[INNER IP] Adding original IP header: src 10.1.0.100 → dst 10.2.0.50');await new Promise(r=>setTimeout(r,700));
+
+  const l2=document.getElementById('pl2');if(l2){l2.classList.add('show');}
+  log('pkt','enc','[ESP] Adding ESP header — encrypting everything above this line...');await new Promise(r=>setTimeout(r,800));
+
+  const l1=document.getElementById('pl1');if(l1){l1.classList.add('show');}
+  log('pkt','vpn','[OUTER IP] Adding new IP header: src 203.0.113.1 → dst 198.51.100.1');await new Promise(r=>setTimeout(r,600));
+
+  const l5=document.getElementById('pl5');if(l5){l5.style.opacity='1';l5.classList.add('show');}
+  log('pkt','enc','[AUTH] Appending ESP trailer + HMAC-SHA256 integrity tag');await new Promise(r=>setTimeout(r,500));
+
+  log('pkt','ok','[DONE] Packet fully encapsulated. Inner IP + payload are invisible to internet ✓');
+  document.getElementById('pkt-desc').textContent='✓ Complete — the real src/dst (10.x.x.x) are hidden inside the encrypted ESP payload';
+  btn.disabled=false;btn.textContent='&#9654; Play';
+}
+
+// ── VPN TUNNEL SIMS ──
+let vSc=0;
+const vScData=[
+  {title:'Tunnel Establishment',desc:'Two VPN gateways negotiate and build an encrypted IPsec tunnel'},
+  {title:'Encrypted Data Flow',desc:'Data flows through the tunnel — attacker sees only ciphertext'},
+  {title:'Tunnel Failure & Rekey',desc:'SA lifetime expires — IKE automatically renegotiates new keys'},
+  {title:'Split Tunneling',desc:'Corporate traffic goes through VPN, internet traffic goes direct'},
+];
+function selVPN(i,btn){vSc=i;document.querySelectorAll('#vpn-sc-tabs .sc-tab').forEach(t=>t.classList.remove('active','v'));btn.classList.add('active','v');st('vpn-sim-title',vScData[i].title);setDesc('vpn',vScData[i].desc);rVC();}
+function rVC(){['vsa','vsb','vtunnel','vtunnel-top','vtunnel-bot','vtunnel-lbl','vevil','vsplit'].forEach(hide);['vlink-left','vlink-right'].forEach(id=>rl(id));hide('vpkt');hide('vpkt-lbl');}
+
+async function runVPN(){
+  const btn=document.getElementById('vpn-play');btn.disabled=true;btn.textContent='&#9632; Running';
+  clrLog('vpn');rVC();const p='vpn';
+  if(vSc===0)await vTunnel(p);
+  else if(vSc===1)await vData(p);
+  else if(vSc===2)await vRekey(p);
+  else await vSplit(p);
+  btn.disabled=false;btn.textContent='&#9654; Play';
+}
+
+async function vTunnel(p){
+  setDesc(p,'IKE negotiation → SA establishment → tunnel ready');
+  show('vsa');show('vsb');st('vsa-t','IDLE');st('vsb-t','IDLE');
+  log(p,'info','[VPN] GW-A initiating IKE to GW-B (UDP 500)');await w(p,500);
+  st('vsa-t','IKE INIT');await anim('vpkt','vpkt-lbl',235,140,665,140,'IKE_INIT','var(--ike)');
+  log(p,'ike','[IKE] IKE_SA_INIT sent: DH group 20 | AES-256 | SHA-384');await w(p,400);
+  st('vsb-t','IKE INIT');await anim('vpkt','vpkt-lbl',665,140,235,140,'IKE_RESP','var(--ike)');
+  log(p,'ike','[IKE] IKE_SA_INIT response: algorithms agreed | DH exchange complete');await w(p,400);
+  st('vsa-t','AUTH');st('vsb-t','AUTH');
+  await anim('vpkt','vpkt-lbl',235,140,665,140,'IKE_AUTH','var(--vpn)');
+  log(p,'vpn','[IKE] IKE_AUTH: identity + certificate verified | Phase 1 DONE');await w(p,400);
+  await anim('vpkt','vpkt-lbl',665,140,235,140,'IKE_AUTH','var(--vpn)');
+  log(p,'vpn','[IKE] Mutual authentication complete — negotiating IPsec SA (Phase 2)');await w(p,400);
+  st('vsa-t','ESTABLISHED');st('vsb-t','ESTABLISHED');
+  document.querySelector('#vsa rect')?.setAttribute('fill','rgba(52,211,153,0.12)');
+  document.querySelector('#vsa rect')?.setAttribute('stroke','var(--enc)');
+  document.querySelector('#vsb rect')?.setAttribute('fill','rgba(52,211,153,0.12)');
+  document.querySelector('#vsb rect')?.setAttribute('stroke','var(--enc)');
+  show('vtunnel');show('vtunnel-top');show('vtunnel-bot');show('vtunnel-lbl');
+  st('vtunnel-txt','AES-256-GCM TUNNEL ACTIVE');
+  flash('vgwa','var(--enc)');flash('vgwb','var(--enc)');
+  log(p,'ok','[VPN] Tunnel ESTABLISHED — AES-256-GCM encryption active ✓');
+  setDesc(p,'✓ Tunnel up — all traffic between 10.1.0.0/24 and 10.2.0.0/24 is encrypted');
+}
+
+async function vData(p){
+  setDesc(p,'Attacker intercepts packets — but sees only encrypted ciphertext');
+  show('vevil');show('vtunnel');show('vtunnel-top');show('vtunnel-bot');show('vtunnel-lbl');st('vtunnel-txt','AES-256-GCM');
+  log(p,'info','[VPN] Tunnel active. NY laptop sends data to London server...');await w(p,700);
+  log(p,'vpn','[GW-A] Packet received: 10.1.0.100 → 10.2.0.50. Encrypting...');await w(p,500);
+  await anim('vpkt','vpkt-lbl',235,140,450,140,'CIPHERTEXT','var(--enc)');
+  log(p,'warn','[ATTACKER] Intercepted packet at internet hop — reading contents...');await w(p,500);
+  log(p,'err','[ATTACKER] Contents: a7f3c9d1 2b8e4f6a 99d0c... (indecipherable AES-256)');await w(p,500);
+  log(p,'ok','[ATTACKER] FAILED — cannot decrypt without the session key ✓');await w(p,400);
+  await anim('vpkt','vpkt-lbl',450,140,665,140,'CIPHERTEXT','var(--enc)');
+  log(p,'vpn','[GW-B] Received encrypted packet — decrypting with shared key...');await w(p,400);
+  await anim('vpkt','vpkt-lbl',665,140,800,140,'PLAINTEXT','var(--enc)');
+  flash('vserver','var(--enc)');
+  log(p,'ok','[SERVER] Data received at 10.2.0.50 — plaintext restored ✓');
+  setDesc(p,'✓ Data delivered securely — attacker intercepted but could not read anything');
+}
+
+async function vRekey(p){
+  setDesc(p,'SA lifetime expires — IKE silently renegotiates new keys without dropping traffic');
+  show('vtunnel');show('vtunnel-top');show('vtunnel-bot');show('vtunnel-lbl');st('vtunnel-txt','SA LIFETIME: EXPIRING');
+  show('vsa');show('vsb');st('vsa-t','SA ACTIVE');st('vsb-t','SA ACTIVE');
+  log(p,'info','[VPN] IPsec SA lifetime approaching limit (default 1 hour / 4GB)');await w(p,700);
+  log(p,'warn','[IKE] SA will expire in 30s — initiating rekey before expiry...');await w(p,600);
+  log(p,'ike','[IKE] Starting CREATE_CHILD_SA exchange for new keys...');
+  await anim('vpkt','vpkt-lbl',235,140,665,140,'CHILD_SA','var(--ike)');await w(p,400);
+  await anim('vpkt','vpkt-lbl',665,140,235,140,'CHILD_SA','var(--ike)');
+  log(p,'ike','[IKE] New key material generated via DH — PFS enabled (new DH each rekey)');await w(p,500);
+  log(p,'vpn','[VPN] New SA installed — switching to new SPI...');await w(p,400);
+  st('vtunnel-txt','NEW SA ACTIVE — REKEYED');
+  document.getElementById('vtunnel')?.setAttribute('stroke','var(--enc)');
+  st('vsa-t','REKEYED');st('vsb-t','REKEYED');
+  document.querySelector('#vsa rect')?.setAttribute('stroke','var(--enc)');
+  document.querySelector('#vsb rect')?.setAttribute('stroke','var(--enc)');
+  log(p,'ok','[VPN] Rekey complete. Old SA deleted. Traffic never interrupted ✓');
+  setDesc(p,'✓ Seamless rekey — new encryption keys without dropping a single packet');
+}
+
+async function vSplit(p){
+  setDesc(p,'Split tunneling: corporate traffic via VPN, internet traffic goes direct');
+  show('vtunnel');show('vtunnel-top');show('vtunnel-bot');show('vtunnel-lbl');
+  st('vtunnel-txt','VPN FOR 10.2.0.0/24 ONLY');
+  show('vsplit');show('vsa');st('vsa-t','SPLIT MODE');
+  log(p,'info','[VPN] Split tunneling enabled — routing table:');await w(p,600);
+  log(p,'vpn','  10.2.0.0/24 → via VPN tunnel (encrypted)');await w(p,400);
+  log(p,'warn','  0.0.0.0/0   → via local ISP (unencrypted, direct)');await w(p,600);
+  log(p,'ike','[TRAFFIC] NY laptop accessing London file share (10.2.0.50)...');
+  await anim('vpkt','vpkt-lbl',144,140,235,140,'10.2.x.x','var(--vpn)');
+  await anim('vpkt','vpkt-lbl',235,140,665,140,'ENCRYPTED','var(--enc)');
+  log(p,'ok','[VPN] 10.2.0.50 routed through tunnel ✓');await w(p,500);
+  log(p,'ike','[TRAFFIC] NY laptop accessing YouTube (216.58.x.x)...');
+  await anim('vpkt','vpkt-lbl',144,100,450,80,'youtube.com','var(--orange)');
+  log(p,'warn','[DIRECT] YouTube traffic bypasses VPN — exits local ISP directly');await w(p,400);
+  log(p,'info','[NOTE] Pro: faster internet. Con: internet traffic unmonitored by corp firewall.');
+  setDesc(p,'✓ Corporate traffic encrypted via VPN, internet traffic exits direct');
+}
+
+// ── IKE SIMS ──
+let iSc=0;
+const iScData=[
+  {title:'IKE Phase 1 — ISAKMP SA',desc:'Peers authenticate and create a secure management channel'},
+  {title:'IKE Phase 2 — IPsec SA',desc:'Phase 1 channel used to negotiate the actual data encryption SAs'},
+  {title:'Diffie-Hellman Key Exchange',desc:'How two peers agree on a shared secret without ever sending it'},
+  {title:'SA Rekeying',desc:'Automatic key rotation to maintain Perfect Forward Secrecy'},
+];
+function selIKE(i,btn){iSc=i;document.querySelectorAll('#ike-sc-tabs .sc-tab').forEach(t=>t.classList.remove('active','i'));btn.classList.add('active','i');st('ike-sim-title',iScData[i].title);setDesc('ike',iScData[i].desc);rIC();}
+function rIC(){['ikesa','ikesb','ike-p1-lbl','ike-p2-lbl','dh-viz'].forEach(hide);lc('ike-ch','#1e3048',1.5,'6,4');hide('ikepkt');hide('ikepkt-l');}
+
+async function runIKE(){
+  const btn=document.getElementById('ike-play');btn.disabled=true;btn.textContent='&#9632; Running';
+  clrLog('ike');rIC();const p='ike';
+  if(iSc===0)await iPhase1(p);
+  else if(iSc===1)await iPhase2(p);
+  else if(iSc===2)await iDH(p);
+  else await iRekey(p);
+  btn.disabled=false;btn.textContent='&#9654; Play';
+}
+
+async function iPhase1(p){
+  setDesc(p,'6 messages (Main Mode) or 4 messages (Aggressive Mode) to build ISAKMP SA');
+  show('ikesa');show('ikesb');st('ikesa-t','IDLE');st('ikesb-t','IDLE');show('ike-p1-lbl');
+  log(p,'info','[IKE] Phase 1 begins — Main Mode (6 messages)');await w(p,500);
+  log(p,'ike','[MSG 1] GW-A → GW-B: Propose crypto (AES-256, SHA-384, DH-20, lifetime)');
+  await anim('ikepkt','ikepkt-l',180,130,720,130,'PROPOSE','var(--ike)');st('ikesb-t','NEGOTIATING');await w(p,400);
+  log(p,'ike','[MSG 2] GW-B → GW-A: Accept AES-256-GCM | SHA-384 | DH group 20');
+  await anim('ikepkt','ikepkt-l',720,130,180,130,'ACCEPT','var(--ike)');st('ikesa-t','NEGOTIATING');await w(p,400);
+  log(p,'ike','[MSG 3+4] Diffie-Hellman key exchange (public values exchanged)');
+  await anim('ikepkt','ikepkt-l',180,130,720,130,'DH_PUB_A','var(--vpn)');
+  await anim('ikepkt','ikepkt-l',720,130,180,130,'DH_PUB_B','var(--vpn)');
+  log(p,'vpn','[IKE] Both compute shared secret independently — never transmitted');await w(p,500);
+  log(p,'ike','[MSG 5+6] Identity + certificate exchange (encrypted with derived key)');
+  await anim('ikepkt','ikepkt-l',180,130,720,130,'ID+CERT','var(--enc)');
+  await anim('ikepkt','ikepkt-l',720,130,180,130,'ID+CERT','var(--enc)');
+  lc('ike-ch','var(--ike)',2.5,'none');
+  st('ikesa-t','ISAKMP SA UP');st('ikesb-t','ISAKMP SA UP');
+  document.querySelector('#ikesa rect')?.setAttribute('stroke','var(--enc)');
+  document.querySelector('#ikesb rect')?.setAttribute('stroke','var(--enc)');
+  log(p,'ok','[IKE] Phase 1 COMPLETE — ISAKMP SA established ✓');
+  setDesc(p,'✓ Secure management channel ready — Phase 2 can now begin');
+}
+
+async function iPhase2(p){
+  setDesc(p,'Using Phase 1 channel to negotiate IPsec SAs for actual data traffic');
+  show('ikesa');show('ikesb');st('ikesa-t','ISAKMP SA UP');st('ikesb-t','ISAKMP SA UP');
+  lc('ike-ch','var(--ike)',2.5,'none');show('ike-p2-lbl');
+  log(p,'info','[IKE] Phase 2 (Quick Mode) — negotiating IPsec SAs inside Phase 1 channel');await w(p,600);
+  log(p,'ike','[MSG 1] Propose: ESP | AES-256-GCM | SHA-256 | tunnel mode | PFS | lifetime:3600s');
+  await anim('ikepkt','ikepkt-l',180,130,720,130,'QM1','var(--vpn)');await w(p,400);
+  log(p,'ike','[MSG 2] Accept proposal | SPI-A: 0x1a2b3c4d | SPI-B: 0x9f8e7d6c');
+  await anim('ikepkt','ikepkt-l',720,130,180,130,'QM2','var(--vpn)');await w(p,400);
+  log(p,'ike','[MSG 3] Hash confirmation — SAs are now synchronized');
+  await anim('ikepkt','ikepkt-l',180,130,720,130,'QM3','var(--enc)');await w(p,400);
+  st('ikesa-t','IPSEC SA UP');st('ikesb-t','IPSEC SA UP');
+  document.querySelector('#ikesa rect')?.setAttribute('fill','rgba(52,211,153,0.12)');
+  document.querySelector('#ikesb rect')?.setAttribute('fill','rgba(52,211,153,0.12)');
+  log(p,'vpn','[IKE] Two unidirectional SAs created (one each way)');await w(p,400);
+  log(p,'ok','[IKE] Phase 2 COMPLETE — data plane ready, VPN tunnel active ✓');
+  setDesc(p,'✓ IPsec SAs active — encrypted data can now flow through the tunnel');
+}
+
+async function iDH(p){
+  setDesc(p,'How two routers agree on a shared secret without ever transmitting it');
+  show('dh-viz');
+  log(p,'info','[DH] Diffie-Hellman key exchange — conceptual walkthrough');await w(p,500);
+  log(p,'ike','[DH] Public parameters agreed: prime p, generator g (public, not secret)');await w(p,600);
+  log(p,'ike','[GW-A] Picks private secret a=7. Computes: g^7 mod p → sends to GW-B');
+  st('dh-a','Private: a=7 (secret)');await w(p,500);
+  await anim('ikepkt','ikepkt-l',180,130,720,130,'g^a mod p','var(--ike)');
+  st('dh-b','Received: g^a mod p');await w(p,400);
+  log(p,'ike','[GW-B] Picks private secret b=13. Computes: g^13 mod p → sends to GW-A');
+  st('dh-b','Private: b=13 (secret)');await w(p,400);
+  await anim('ikepkt','ikepkt-l',720,130,180,130,'g^b mod p','var(--ike)');
+  st('dh-a','Received: g^b mod p');await w(p,500);
+  log(p,'vpn','[GW-A] Computes: (g^b)^a mod p = g^(ab) mod p → SHARED SECRET');
+  log(p,'vpn','[GW-B] Computes: (g^a)^b mod p = g^(ab) mod p → SAME SHARED SECRET');
+  await w(p,600);
+  st('dh-a2','Shared = g^(ab) mod p ✓');st('dh-b2','Shared = g^(ab) mod p ✓');
+  sa('dh-shared',{opacity:'1'});st('dh-shared','SHARED SECRET: g^(ab) mod p — never transmitted');
+  log(p,'ok','[DH] Same secret derived independently — attacker saw only g^a and g^b ✓');
+  setDesc(p,'✓ Shared secret established — the math makes it impossible to reverse without knowing a or b');
+}
+
+async function iRekey(p){
+  setDesc(p,'SA lifetime expires — automated rekey with new DH to ensure PFS');
+  show('ikesa');show('ikesb');st('ikesa-t','SA ACTIVE');st('ikesb-t','SA ACTIVE');
+  lc('ike-ch','var(--enc)',2,'none');show('ike-p2-lbl');
+  log(p,'info','[IKE] IPsec SA approaching lifetime limit...');await w(p,600);
+  log(p,'warn','[IKE] Initiating CREATE_CHILD_SA for new key material');await w(p,500);
+  log(p,'ike','[PFS] New Diffie-Hellman exchange — old key cannot derive new key');
+  await anim('ikepkt','ikepkt-l',180,130,720,130,'CHILD_SA','var(--vpn)');
+  await anim('ikepkt','ikepkt-l',720,130,180,130,'CHILD_SA','var(--vpn)');await w(p,400);
+  log(p,'ike','[IKE] New SAs installed: SPI-A: 0x5e6f7a8b | SPI-B: 0x2c3d4e5f');await w(p,400);
+  log(p,'info','[IKE] Old SAs deleted — even if old key compromised, new traffic is safe');await w(p,400);
+  st('ikesa-t','REKEYED');st('ikesb-t','REKEYED');
+  log(p,'ok','[IKE] Rekey complete — Perfect Forward Secrecy maintained ✓');
+  setDesc(p,'✓ PFS guaranteed — each SA uses independent key material via fresh DH');
+}
+
+// ── ENC TYPE SIMS ──
+let eSc=0;
+const eScData=[
+  {title:'Site-to-Site IPsec VPN',desc:'Permanent encrypted tunnel between two office gateways'},
+  {title:'Remote Access VPN',desc:'Employee authenticates and joins the corporate network from anywhere'},
+  {title:'SSL VPN',desc:'Browser-based access via TLS — works through any firewall on port 443'},
+  {title:'No VPN — Danger',desc:'What an attacker sees when there is no VPN protecting the traffic'},
+];
+function selENC(i,btn){eSc=i;document.querySelectorAll('#enc-sc-tabs .sc-tab').forEach(t=>t.classList.remove('active','e'));btn.classList.add('active','e');st('enc-sim-title',eScData[i].title);setDesc('enc',eScData[i].desc);rEC();}
+function rEC(){['etunnel','etunnel-top','etunnel-bot','etunnel-lbl','eevil','enc-badge','egw2','edst2'].forEach(hide);show('egw');show('edst');hide('epkt2');hide('epkt2-l');['elink-l','elink-r'].forEach(rl);}
+
+async function runENC(){
+  const btn=document.getElementById('enc-play');btn.disabled=true;btn.textContent='&#9632; Running';
+  clrLog('enc');rEC();const p='enc';
+  if(eSc===0)await eSite(p);
+  else if(eSc===1)await eRemote(p);
+  else if(eSc===2)await eSSL(p);
+  else await eDanger(p);
+  btn.disabled=false;btn.textContent='&#9654; Play';
+}
+
+async function eSite(p){
+  setDesc(p,'Always-on IPsec tunnel — users just work, they never think about the VPN');
+  st('eclient-lbl','NY Employee');st('eclient-ip','10.1.0.50');st('edst-lbl','London Server');st('edst-ip','10.2.0.50');
+  log(p,'info','[SITE-TO-SITE] Both gateways permanently connected via IPsec IKEv2');await w(p,600);
+  show('etunnel');show('etunnel-top');show('etunnel-bot');show('etunnel-lbl');st('etunnel-txt','IPSEC TUNNEL — ALWAYS ON');
+  log(p,'enc','[GW-A ↔ GW-B] Tunnel pre-established — no user action needed');await w(p,500);
+  log(p,'info','[NY User] Accessing London file server — transparent to user...');
+  await anim('epkt2','epkt2-l',54,140,221,140,'DATA','var(--enc)');
+  log(p,'enc','[GW-A] Encrypting: 10.1.0.50 → 10.2.0.50 | ESP/AES-256');
+  await anim('epkt2','epkt2-l',257,140,502,140,'CIPHERTEXT','var(--enc)');
+  await anim('epkt2','epkt2-l',502,140,622,140,'CIPHERTEXT','var(--enc)');
+  log(p,'enc','[GW-B] Decrypting and forwarding to 10.2.0.50');
+  await anim('epkt2','epkt2-l',686,140,786,140,'DATA','var(--enc)');
+  flash('edst','var(--enc)');
+  show('enc-badge');st('enc-badge-t','SITE-TO-SITE TUNNEL ACTIVE');
+  log(p,'ok','[DONE] File transferred. User never knew VPN was involved ✓');
+  setDesc(p,'✓ Zero user friction — gateway-to-gateway tunnel is fully transparent');
+}
+
+async function eRemote(p){
+  setDesc(p,'Remote user authenticates with MFA, gets a virtual IP, joins the corporate network');
+  st('eclient-lbl','Home Worker');st('eclient-ip','100.64.0.5');
+  hide('egw');st('edst-lbl','Corp VPN GW');st('edst-ip','203.0.113.1');
+  log(p,'info','[REMOTE ACCESS] Employee starts VPN client from home...');await w(p,500);
+  log(p,'vpn','[CLIENT] Sending IKE_SA_INIT to 203.0.113.1:500');
+  await anim('epkt2','epkt2-l',54,140,450,140,'IKE INIT','var(--vpn)');await w(p,400);
+  log(p,'ike','[GW] Challenge: Provide credentials + MFA token');
+  await anim('epkt2','epkt2-l',622,140,54,140,'CHALLENGE','var(--ike)');await w(p,400);
+  log(p,'vpn','[CLIENT] Username: jrey | Password: *** | MFA: 847291');
+  await anim('epkt2','epkt2-l',54,140,622,140,'AUTH','var(--vpn)');await w(p,500);
+  log(p,'enc','[GW] Auth OK — assigning virtual IP 10.2.0.201 to remote client');await w(p,400);
+  show('etunnel');show('etunnel-top');show('etunnel-bot');show('etunnel-lbl');st('etunnel-txt','REMOTE ACCESS VPN — AUTHENTICATED');
+  show('enc-badge');st('enc-badge-t','CLIENT IP: 10.2.0.201 ASSIGNED');
+  log(p,'ok','[VPN] Remote user is now a member of 10.2.0.0/24 corporate network ✓');
+  setDesc(p,'✓ Remote user tunneled in — appears as 10.2.0.201 on the corporate LAN');
+}
+
+async function eSSL(p){
+  setDesc(p,'SSL VPN: TLS on port 443 — works from any browser, no special firewall rules');
+  st('eclient-lbl','Browser');st('eclient-ip','any network');hide('egw');
+  st('edst-lbl','SSL VPN Portal');st('edst-ip','vpn.corp.com:443');
+  log(p,'info','[SSL VPN] User opens browser: https://vpn.corp.com');await w(p,500);
+  log(p,'ike','[TLS] TCP:443 SYN → SYN-ACK → TLS 1.3 ClientHello');
+  await anim('epkt2','epkt2-l',54,140,450,140,'TLS HELLO','var(--ike)');await w(p,400);
+  log(p,'ike','[TLS] Server certificate verified — TLS 1.3 handshake complete');
+  await anim('epkt2','epkt2-l',622,140,54,140,'TLS OK','var(--ike)');await w(p,400);
+  log(p,'vpn','[SSL VPN] Login page served over HTTPS — username + MFA');
+  await anim('epkt2','epkt2-l',54,140,622,140,'CREDENTIALS','var(--vpn)');await w(p,400);
+  show('etunnel');show('etunnel-top');show('etunnel-bot');show('etunnel-lbl');st('etunnel-txt','TLS 1.3 — PORT 443');
+  log(p,'enc','[SSL VPN] Session established — app proxied over TLS');await w(p,400);
+  show('enc-badge');st('enc-badge-t','SSL VPN SESSION ACTIVE — TLS 1.3');
+  log(p,'ok','[SSL VPN] Works behind hotel WiFi, strict firewalls, NAT — port 443 always open ✓');
+  setDesc(p,'✓ Firewall-friendly — TLS on 443 passes any corporate or hotel firewall');
+}
+
+async function eDanger(p){
+  setDesc(p,'No VPN: attacker on the same network can read everything in plaintext');
+  st('eclient-lbl','Cafe User');st('eclient-ip','192.168.1.55');hide('egw');
+  st('edst-lbl','HTTP Server');st('edst-ip','10.2.0.50:80');
+  show('eevil');
+  log(p,'warn','[DANGER] No VPN. User on cafe WiFi sending data over HTTP...');await w(p,600);
+  log(p,'info','[USER] Accessing internal app at http://app.corp.com — no encryption');
+  await anim('epkt2','epkt2-l',54,140,450,140,'PLAINTEXT','var(--red)');
+  log(p,'err','[ATTACKER] Intercepted packet! Reading contents...');await w(p,500);
+  log(p,'err','[ATTACKER] HTTP GET /api/salary?user=jrey');await w(p,300);
+  log(p,'err','[ATTACKER] Authorization: Basic amRlZTpwYXNzd29yZA==');await w(p,300);
+  log(p,'err','[ATTACKER] (Base64 decoded: jdee:password) — credentials STOLEN');await w(p,500);
+  show('enc-badge');document.querySelector('#enc-badge rect')?.setAttribute('fill','rgba(248,113,113,0.12)');document.querySelector('#enc-badge rect')?.setAttribute('stroke','var(--red)');st('enc-badge-t','NO ENCRYPTION — CREDENTIALS EXPOSED');document.getElementById('enc-badge-t')?.setAttribute('fill','var(--red)');
+  log(p,'err','[LESSON] This is why VPNs exist. Always use VPN on untrusted networks.');
+  setDesc(p,'⚠ No VPN = your credentials, session tokens, and data are visible to attackers');
+}
+
+// ── QUIZ ──
+const Qs=[
+  {q:'What three things does a VPN provide?',ctx:'VPN stands for Virtual Private Network.',opts:['Speed, Reliability, Bandwidth','Tunneling, Encryption, Authentication','NAT, Routing, Switching','Compression, QoS, Redundancy'],c:1,exp:'A VPN provides Tunneling (encapsulating the original packet), Encryption (making the payload unreadable to eavesdroppers), and Authentication (verifying both endpoints are legitimate before the tunnel forms).'},
+  {q:'What protocol does IKE use and on which port?',ctx:'IKE negotiates IPsec Security Associations before data flows.',opts:['TCP port 179','UDP port 500','TCP port 443','UDP port 4789'],c:1,exp:'IKE uses UDP port 500. When NAT is detected between peers, it switches to UDP port 4500 (NAT-T — NAT Traversal) which encapsulates ESP inside UDP so it survives address translation.'},
+  {q:'What is the difference between IPsec Transport Mode and Tunnel Mode?',ctx:'IPsec can operate in two modes depending on the deployment.',opts:['Transport = faster, Tunnel = slower','Transport = encrypts only payload, Tunnel = encrypts entire original packet','Transport = for gateways, Tunnel = for end hosts','Transport = AES, Tunnel = 3DES'],c:1,exp:'Transport Mode only encrypts the payload — the original IP header remains visible. Tunnel Mode encrypts the entire original packet (header + payload) and adds a new IP header, hiding internal IP addresses. Tunnel Mode is used for site-to-site VPNs.'},
+  {q:'What does ESP stand for and what does it provide?',ctx:'ESP is one of two IPsec protocols (the other is AH).',opts:['Encrypted Secure Protocol — only authentication','Encapsulating Security Payload — confidentiality, integrity, authentication','Extended Security Packet — compression only','Encrypted Session Payload — key exchange'],c:1,exp:'ESP stands for Encapsulating Security Payload. It provides confidentiality (encrypts the payload with AES), integrity (HMAC ensures data was not tampered with), and authentication (proves the sender). ESP protocol number is 50.'},
+  {q:'What is Perfect Forward Secrecy (PFS)?',ctx:'PFS is a property of the key exchange mechanism.',opts:['Encrypting all past session logs','Using a new Diffie-Hellman exchange for each SA so old keys cannot decrypt new traffic','Storing encryption keys in hardware','Authenticating both directions of the tunnel'],c:1,exp:'PFS means that compromising one session key does not compromise past or future sessions. Each SA rekey uses a fresh Diffie-Hellman exchange, so the session keys are mathematically independent. Even if an attacker records all traffic and later steals the long-term key, they cannot decrypt recorded sessions.'},
+  {q:'Which VPN type works best through strict firewalls that block non-standard ports?',ctx:'Some networks block UDP 500 and ESP (protocol 50).',opts:['Site-to-site IPsec','L2TP/IPsec','SSL/TLS VPN on port 443','GRE tunnel'],c:2,exp:'SSL/TLS VPN operates on TCP port 443 — the same port as HTTPS. Since port 443 is almost never blocked (it would break all web browsing), SSL VPNs work from coffee shops, hotels, and corporate networks that block UDP 500 and ESP.'},
+  {q:'What is a Security Association (SA)?',ctx:'IPsec uses SAs to track encryption parameters.',opts:['A firewall rule allowing VPN traffic','A one-way agreement on cryptographic algorithms and keys between two peers','A two-way certificate exchange','The physical link between two VPN gateways'],c:1,exp:'A Security Association is a one-way agreement specifying all the parameters for securing traffic in one direction: the algorithm (AES-256-GCM), key, SPI (Security Parameter Index), and lifetime. IPsec always creates two SAs — one for each direction of traffic.'},
+  {q:'What is split tunneling?',ctx:'VPN clients can be configured in different routing modes.',opts:['Dividing one physical tunnel into two logical ones','Routing only corporate traffic via VPN while internet traffic goes direct','Using two VPN gateways simultaneously for redundancy','Splitting authentication between PSK and certificates'],c:1,exp:'Split tunneling routes only traffic destined for the corporate network through the VPN tunnel. All other internet traffic (YouTube, news sites, etc.) exits directly via the local ISP. This reduces VPN bandwidth load but means internet traffic from the remote user is not protected or monitored by the corporate firewall.'},
+];
+let qC=0,qS=0,qD=[];
+function initQuiz(){qC=0;qS=0;qD=new Array(Qs.length).fill(false);document.getElementById('sw').classList.remove('show');rProg();rQ(0);}
+function rProg(){document.getElementById('qprog').innerHTML=Qs.map((_,i)=>`<div class="qpip ${i<qC?'done':i===qC?'cur':''}"></div>`).join('');}
+function rQ(i){const q=Qs[i],L=['A','B','C','D'];document.getElementById('qc').innerHTML=`<div class="qcard"><div style="font-family:'Share Tech Mono',monospace;font-size:10px;letter-spacing:2px;color:var(--dim);margin-bottom:12px">QUESTION ${i+1} / ${Qs.length}</div><div class="qq">${q.q}</div><div class="qctx">${q.ctx}</div><div class="qopts">${q.opts.map((o,j)=>`<button class="qopt" onclick="ansQ(${j},${q.c},'${q.exp.replace(/'/g,"\\'")}')"><div class="qltr">${L[j]}</div>${o}</button>`).join('')}</div><div class="qexp" id="qe"></div></div>`;}
+function ansQ(i,c,exp){if(qD[qC])return;qD[qC]=true;const opts=document.querySelectorAll('.qopt');opts.forEach(o=>o.disabled=true);opts[i].classList.add(i===c?'correct':'wrong');if(i!==c)opts[c].classList.add('correct');const e=document.getElementById('qe');e.textContent=(i===c?'✓ Correct — ':'✗ Not quite — ')+exp;e.style.borderColor=i===c?'#4ade80':'var(--red)';e.classList.add('show');if(i===c)qS++;setTimeout(()=>{qC++;rProg();if(qC<Qs.length){rQ(qC);}else{document.getElementById('qc').innerHTML='';const sn=document.getElementById('sn');sn.textContent=qS+'/'+Qs.length;sn.style.color=qS>=6?'#4ade80':qS>=4?'var(--yellow)':'var(--red)';document.getElementById('sw').classList.add('show');}},2200);}
+initQuiz();
+</script>
+</body>
+</html>
