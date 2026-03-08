@@ -1,0 +1,607 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NetLab — Interactive Networking Glossary</title>
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Bebas+Neue&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #080b14;
+    --surface: #0d1120;
+    --border: #161f35;
+    --border-bright: #1e2d50;
+    --accent: #00e5ff;
+    --accent2: #ff5c35;
+    --green: #00ff88;
+    --yellow: #ffd444;
+    --text: #b8cce0;
+    --dim: #3a5070;
+    --white: #e8f0f8;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 16px;
+    overflow-x: hidden;
+  }
+
+  /* ── GRID BACKGROUND ── */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(0,229,255,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,229,255,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* ── NAV ── */
+  nav {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    padding: 0 40px;
+    height: 60px;
+    background: rgba(8,11,20,0.85);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .nav-logo {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 26px;
+    letter-spacing: 4px;
+    color: var(--white);
+  }
+
+  .nav-logo span { color: var(--accent); }
+
+  .nav-links {
+    margin-left: auto;
+    display: flex;
+    gap: 32px;
+    list-style: none;
+  }
+
+  .nav-links a {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 12px;
+    letter-spacing: 1.5px;
+    color: var(--dim);
+    text-decoration: none;
+    text-transform: uppercase;
+    transition: color 0.2s;
+  }
+
+  .nav-links a:hover { color: var(--accent); }
+
+  /* ── HERO ── */
+  .hero {
+    position: relative;
+    z-index: 1;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 120px 40px 80px;
+    max-width: 1100px;
+    margin: 0 auto;
+  }
+
+  .hero-eyebrow {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 12px;
+    letter-spacing: 3px;
+    color: var(--accent);
+    text-transform: uppercase;
+    margin-bottom: 24px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .hero-eyebrow::before {
+    content: '';
+    width: 40px;
+    height: 1px;
+    background: var(--accent);
+  }
+
+  h1 {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: clamp(64px, 10vw, 120px);
+    line-height: 0.9;
+    letter-spacing: 2px;
+    color: var(--white);
+    margin-bottom: 32px;
+  }
+
+  h1 .line2 {
+    color: transparent;
+    -webkit-text-stroke: 1px rgba(0,229,255,0.4);
+  }
+
+  h1 .line3 { color: var(--accent); }
+
+  .hero-desc {
+    max-width: 520px;
+    font-size: 18px;
+    font-weight: 300;
+    line-height: 1.7;
+    color: var(--text);
+    margin-bottom: 48px;
+  }
+
+  .hero-cta {
+    display: flex;
+    gap: 16px;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+
+  .btn-primary {
+    background: var(--accent);
+    color: var(--bg);
+    padding: 14px 32px;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 13px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    text-decoration: none;
+    font-weight: 700;
+    transition: all 0.2s;
+    clip-path: polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 0 100%);
+  }
+
+  .btn-primary:hover {
+    background: var(--white);
+    transform: translateY(-2px);
+  }
+
+  .btn-ghost {
+    color: var(--dim);
+    padding: 14px 32px;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 13px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    text-decoration: none;
+    border: 1px solid var(--border-bright);
+    transition: all 0.2s;
+  }
+
+  .btn-ghost:hover { color: var(--text); border-color: var(--dim); }
+
+  .hero-stats {
+    display: flex;
+    gap: 48px;
+    margin-top: 80px;
+    padding-top: 40px;
+    border-top: 1px solid var(--border);
+  }
+
+  .stat-num {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 48px;
+    color: var(--white);
+    letter-spacing: 2px;
+    line-height: 1;
+  }
+
+  .stat-num span { color: var(--accent); }
+
+  .stat-label {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 11px;
+    color: var(--dim);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-top: 4px;
+  }
+
+  /* ── LABS SECTION ── */
+  .labs-section {
+    position: relative;
+    z-index: 1;
+    padding: 80px 40px;
+    max-width: 1100px;
+    margin: 0 auto;
+  }
+
+  .section-header {
+    display: flex;
+    align-items: baseline;
+    gap: 20px;
+    margin-bottom: 48px;
+  }
+
+  .section-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 48px;
+    letter-spacing: 3px;
+    color: var(--white);
+  }
+
+  .section-num {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 12px;
+    color: var(--dim);
+    letter-spacing: 2px;
+  }
+
+  .labs-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 2px;
+  }
+
+  /* Lab card */
+  .lab-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    padding: 32px;
+    text-decoration: none;
+    display: block;
+    position: relative;
+    overflow: hidden;
+    transition: border-color 0.2s, transform 0.2s;
+    cursor: pointer;
+  }
+
+  .lab-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 2px;
+    background: var(--card-accent, var(--accent));
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: transform 0.3s;
+  }
+
+  .lab-card:hover::before { transform: scaleX(1); }
+
+  .lab-card:hover {
+    border-color: var(--border-bright);
+    transform: translateY(-3px);
+  }
+
+  .lab-card.locked {
+    opacity: 0.5;
+    cursor: default;
+    pointer-events: none;
+  }
+
+  .card-tag {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--card-accent, var(--accent));
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .card-tag::before {
+    content: '';
+    width: 20px; height: 1px;
+    background: currentColor;
+  }
+
+  .card-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 32px;
+    letter-spacing: 2px;
+    color: var(--white);
+    margin-bottom: 12px;
+    line-height: 1;
+  }
+
+  .card-desc {
+    font-size: 14px;
+    font-weight: 300;
+    color: var(--text);
+    line-height: 1.6;
+    margin-bottom: 24px;
+  }
+
+  .card-meta {
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+
+  .card-pill {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 1px;
+    color: var(--dim);
+    padding: 4px 10px;
+    border: 1px solid var(--border);
+    text-transform: uppercase;
+  }
+
+  .card-pill.ready {
+    color: var(--green);
+    border-color: rgba(0,255,136,0.3);
+    background: rgba(0,255,136,0.05);
+  }
+
+  .card-arrow {
+    position: absolute;
+    bottom: 28px; right: 28px;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 18px;
+    color: var(--card-accent, var(--accent));
+    opacity: 0;
+    transform: translateX(-8px);
+    transition: all 0.2s;
+  }
+
+  .lab-card:hover .card-arrow { opacity: 1; transform: translateX(0); }
+
+  /* ── COMING SOON BANNER ── */
+  .coming-banner {
+    position: absolute;
+    top: 16px; right: -24px;
+    background: var(--dim);
+    color: var(--bg);
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 2px;
+    padding: 4px 32px;
+    transform: rotate(45deg);
+    text-transform: uppercase;
+  }
+
+  /* ── FOOTER ── */
+  footer {
+    position: relative;
+    z-index: 1;
+    border-top: 1px solid var(--border);
+    padding: 40px;
+    max-width: 1100px;
+    margin: 0 auto;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  footer .foot-logo {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 20px;
+    letter-spacing: 4px;
+    color: var(--dim);
+  }
+
+  footer .foot-logo span { color: var(--accent); }
+
+  footer p {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 11px;
+    color: var(--dim);
+    letter-spacing: 1px;
+  }
+
+  /* ── ANIMATIONS ── */
+  .fade-up {
+    opacity: 0;
+    transform: translateY(24px);
+    animation: fadeUp 0.6s ease forwards;
+  }
+
+  @keyframes fadeUp {
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .fade-up:nth-child(1) { animation-delay: 0.1s; }
+  .fade-up:nth-child(2) { animation-delay: 0.2s; }
+  .fade-up:nth-child(3) { animation-delay: 0.3s; }
+  .fade-up:nth-child(4) { animation-delay: 0.4s; }
+  .fade-up:nth-child(5) { animation-delay: 0.5s; }
+
+  .scanline {
+    position: fixed;
+    top: -100%;
+    left: 0; right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, rgba(0,229,255,0.06), transparent);
+    animation: scan 8s linear infinite;
+    pointer-events: none;
+    z-index: 200;
+  }
+
+  @keyframes scan {
+    to { top: 110%; }
+  }
+
+  /* Terminal blinking cursor in hero */
+  .cursor {
+    display: inline-block;
+    width: 3px;
+    height: 1em;
+    background: var(--accent);
+    vertical-align: middle;
+    animation: blink 1s step-end infinite;
+    margin-left: 4px;
+  }
+
+  @keyframes blink {
+    50% { opacity: 0; }
+  }
+</style>
+</head>
+<body>
+
+<div class="scanline"></div>
+
+<nav>
+  <div class="nav-logo">NET<span>LAB</span></div>
+  <ul class="nav-links">
+    <li><a href="#labs">Labs</a></li>
+    <li><a href="https://github.com" target="_blank">GitHub</a></li>
+  </ul>
+</nav>
+
+<section class="hero">
+  <div class="hero-eyebrow fade-up">Interactive Networking Reference</div>
+  <h1 class="fade-up">
+    <div>LEARN</div>
+    <div class="line2">NETWORKING</div>
+    <div class="line3">BY DOING<span class="cursor"></span></div>
+  </h1>
+  <p class="hero-desc fade-up">
+    Hands-on simulators for every core networking concept. Watch packets move, build ARP caches, configure VLANs — all in your browser. Built for network admin interview prep.
+  </p>
+  <div class="hero-cta fade-up">
+    <a href="#labs" class="btn-primary">Browse Labs</a>
+    <a href="tools/arp-lab.html" class="btn-ghost">Start with ARP →</a>
+  </div>
+  <div class="hero-stats fade-up">
+    <div>
+      <div class="stat-num">4<span>+</span></div>
+      <div class="stat-label">Live Labs</div>
+    </div>
+    <div>
+      <div class="stat-num">10<span>+</span></div>
+      <div class="stat-label">Coming Soon</div>
+    </div>
+    <div>
+      <div class="stat-num">0<span>$</span></div>
+      <div class="stat-label">Cost</div>
+    </div>
+  </div>
+</section>
+
+<section class="labs-section" id="labs">
+  <div class="section-header">
+    <div class="section-title">LABS</div>
+    <div class="section-num">// 01 — AVAILABLE NOW</div>
+  </div>
+
+  <div class="labs-grid">
+
+    <!-- LIVE: ARP -->
+    <a href="tools/arp-lab.html" class="lab-card" style="--card-accent: #00e5ff;">
+      <div class="card-tag">Layer 2 — Data Link</div>
+      <div class="card-title">ARP</div>
+      <div class="card-desc">Address Resolution Protocol. Watch broadcast requests, unicast replies, cache population, and gratuitous ARP — all animated in real time.</div>
+      <div class="card-meta">
+        <span class="card-pill ready">● Live</span>
+        <span class="card-pill">4 Scenarios</span>
+        <span class="card-pill">Quiz Included</span>
+      </div>
+      <div class="card-arrow">→</div>
+    </a>
+
+    <!-- COMING: VLANs -->
+    <div class="lab-card locked" style="--card-accent: #ff5c35; position:relative; overflow:hidden;">
+      <div class="coming-banner">Soon</div>
+      <div class="card-tag">Layer 2 — Switching</div>
+      <div class="card-title">VLANs</div>
+      <div class="card-desc">Configure access ports, trunk links, and 802.1Q tagging. See how broadcast domains are segmented on a single switch.</div>
+      <div class="card-meta">
+        <span class="card-pill">Coming Soon</span>
+        <span class="card-pill">Cisco IOS</span>
+      </div>
+    </div>
+
+    <!-- COMING: STP -->
+    <div class="lab-card locked" style="--card-accent: #ffd444; position:relative; overflow:hidden;">
+      <div class="coming-banner">Soon</div>
+      <div class="card-tag">Layer 2 — Redundancy</div>
+      <div class="card-title">STP</div>
+      <div class="card-desc">Spanning Tree Protocol. Visualize root bridge election, port states, and how STP prevents Layer 2 broadcast storms.</div>
+      <div class="card-meta">
+        <span class="card-pill">Coming Soon</span>
+        <span class="card-pill">Animated</span>
+      </div>
+    </div>
+
+    <!-- LIVE: Subnetting -->
+    <a href="tools/subnetting-lab.html" class="lab-card" style="--card-accent: #00ff88;">
+      <div class="card-tag">Layer 3 — Addressing</div>
+      <div class="card-title">Subnetting</div>
+      <div class="card-desc">CIDR notation, subnet masks, host ranges, and wildcard masks. Interactive bit-level visualizer with quiz and full cheatsheet.</div>
+      <div class="card-meta">
+        <span class="card-pill ready">● Live</span>
+        <span class="card-pill">Visualizer</span>
+        <span class="card-pill">Quiz Included</span>
+      </div>
+      <div class="card-arrow">→</div>
+    </a>
+
+    <!-- LIVE: BGP & EIGRP -->
+    <a href="tools/routing-protocols-lab.html" class="lab-card" style="--card-accent: #f97316;">
+      <div class="card-tag">Layer 3 — Routing Protocols</div>
+      <div class="card-title">BGP & EIGRP</div>
+      <div class="card-desc">Border Gateway Protocol and EIGRP explained through live simulations. Watch sessions establish, routes propagate, links fail, and DUAL calculate paths in real time.</div>
+      <div class="card-meta">
+        <span class="card-pill ready">● Live</span>
+        <span class="card-pill">8 Simulations</span>
+        <span class="card-pill">Quiz Included</span>
+      </div>
+      <div class="card-arrow">→</div>
+    </a>
+
+    <!-- LIVE: VPN -->
+    <a href="tools/vpn-lab.html" class="lab-card" style="--card-accent: #a78bfa;">
+      <div class="card-tag">Security — Tunneling & Encryption</div>
+      <div class="card-title">VPN</div>
+      <div class="card-desc">Virtual Private Networks from the ground up. Watch IPsec tunnels form, packets get encrypted layer by layer, IKE negotiate keys, and see what an attacker sees without a VPN.</div>
+      <div class="card-meta">
+        <span class="card-pill ready">● Live</span>
+        <span class="card-pill">12 Simulations</span>
+        <span class="card-pill">Quiz Included</span>
+      </div>
+      <div class="card-arrow">→</div>
+    </a>
+
+    <!-- COMING: OSPF -->
+    <div class="lab-card locked" style="--card-accent: #c084fc; position:relative; overflow:hidden;">
+      <div class="coming-banner">Soon</div>
+      <div class="card-tag">Layer 3 — Routing</div>
+      <div class="card-title">OSPF</div>
+      <div class="card-desc">Open Shortest Path First. Watch LSA flooding, SPF calculation, and route convergence across a multi-router topology.</div>
+      <div class="card-meta">
+        <span class="card-pill">Coming Soon</span>
+        <span class="card-pill">Dynamic</span>
+      </div>
+    </div>
+
+    <!-- COMING: DHCP -->
+    <div class="lab-card locked" style="--card-accent: #fb923c; position:relative; overflow:hidden;">
+      <div class="coming-banner">Soon</div>
+      <div class="card-tag">Layer 7 — Application</div>
+      <div class="card-title">DHCP</div>
+      <div class="card-desc">The DORA process — Discover, Offer, Request, Acknowledge. See how IP addresses are dynamically assigned on a network.</div>
+      <div class="card-meta">
+        <span class="card-pill">Coming Soon</span>
+        <span class="card-pill">DORA Flow</span>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<footer>
+  <div class="foot-logo">NET<span>LAB</span></div>
+  <p>// Built for network admin interview prep</p>
+</footer>
+
+</body>
+</html>
